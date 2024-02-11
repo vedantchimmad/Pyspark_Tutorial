@@ -37,3 +37,10 @@ Spark supports below cluster managers
 *	**Hadoop YARN** – the resource manager in Hadoop 2. This is mostly used, cluster manager.
 *	**Kubernetes** – an open-source system for automating deployment, scaling, and management of containerized applications.
 *	**local** – which is not really a cluster manager but still I wanted to mention as we use `“local”` for `master()` in order to run Spark on your laptop/computer.
+
+### Spark Ecosystem
+![Spark Ecosystem](../resource/image/spark eco system.png)
+* **SPARK SQL** : Is used to run SQL query using distributed engine
+* **Spark Streaming** : Access live data streams using kafka, Spark uses Micro-batching for real-time streaming.
+* **Spark MLlib** :  It contains machine learning libraries that have an implementation of various machine learning algorithms. 
+* **Spark GraphX** : It is network graph analytics engine and data store. 
