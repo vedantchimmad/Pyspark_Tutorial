@@ -1,3 +1,6 @@
+# filter and where
+
+---
 * `filter()` function is used to filter the rows from RDD/DataFrame based on the given condition or SQL expression,
 ```python
 # Create dataframe
