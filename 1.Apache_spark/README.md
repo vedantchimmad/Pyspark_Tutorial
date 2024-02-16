@@ -28,8 +28,23 @@ Apache Spark (Spark) is an open-source data-processing engine for large data set
 *	Provides connectors to store the data in NoSQL databases like MongoDB.
 ### Spark architecture
 ![spark Architecture](../resource/image/spark_architecture.png)
-
 Apache Spark works in a master-slave architecture where the master is called “Driver” and slaves are called “Workers”. When you run a Spark application, Spark Driver creates a context that is an entry point to your application, and all operations (transformations and actions) are executed .
+
+### Spark worker node
+![Worker node](../resource/image/worker_nod.png)
+#### Terminologies
+* **Driver and worker** : These are nothing but JVM process, Within one worker node, there could be multiple executers,each executers runs it's own JVM process
+* **Transformation** : Transforms the input RDD and converts new RDD. Until action is called.
+* **DAG** : Directed Acyclic Graph keeps track of all transformation, for each transformation logic is created 
+* **Action** : When data out put is needed for developer or storage purpose action is called 
+* **RDD** : Resilient distributed dataset. when spark reads or creates data, it creates RDD which is distributed across nodes in the form of partition
+* **Executor** : Each worker node can consists of many executor.it can be configured by spark settings 
+* **Partition** : RDD/Dataframe is stored in a memory of a cluster in the form of partition
+* **Core** : Each executor can consists of multiple cores. this is configurable by spark settings.Each core can process one task at a time
+* **On-heap memory** : The executor memory that lies within JVM process managed by JVM
+* **Od-heap memory** : The executor memory that lies outside JVM process managed OS
+
+* ![memory architecture](../resource/image/memory%20architecture.png )
 ### Cluster Manager Types
 Spark supports below cluster managers
 * **Standalone** – a simple cluster manager included with Spark that makes it easy to set up a cluster.
