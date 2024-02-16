@@ -65,4 +65,13 @@ df.withColumn("hair",df.properties["hair"])
     .drop("properties")
     .show()
 ```
-
+#### map_keys() – Get All Map Keys
+```python
+from pyspark.sql.functions import map_keys
+df.select(df.name,map_keys(df.properties)).show()
+```
+#### map_values() – Get All map Values
+```python
+from pyspark.sql.functions import map_values
+df.select(df.name,map_values(df.properties)).show()
+```
