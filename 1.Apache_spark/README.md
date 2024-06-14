@@ -28,6 +28,7 @@ Apache Spark (Spark) is an open-source data-processing engine for large data set
 *	Provides connectors to store the data in NoSQL databases like MongoDB.
 ### Spark architecture
 ![spark Architecture](../resource/image/spark_architecture.png)
+
 Apache Spark works in a master-slave architecture where the master is called “Driver” and slaves are called “Workers”. When you run a Spark application, Spark Driver creates a context that is an entry point to your application, and all operations (transformations and actions) are executed .
 
 ### Spark worker node
