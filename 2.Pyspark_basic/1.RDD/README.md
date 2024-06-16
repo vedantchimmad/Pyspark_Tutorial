@@ -35,7 +35,7 @@ print(rddCollect)
 Reading CSV files in data frame
 ```python
 from pyspark.sql import SparkSession
-spark = SparkSession.builder().master("local[1]") \
+spark = SparkSession.builder.master("local[1]") \
       .appName("SparkByExamples.com") \
       .getOrCreate()
 
