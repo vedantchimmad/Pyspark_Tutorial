@@ -159,7 +159,58 @@ df.show()
 | Needs SQLContext separately | Unifies SQLContext and HiveContext |
 
 ---
+## ⚙️ How to Pass Configurations in PySpark
 
+In PySpark, configurations can be passed using the `SparkSession.builder.config()` method or via `SparkConf` (used with `SparkContext`).  
+These configurations allow you to customize memory, shuffle behavior, parallelism, etc.
+
+### ✅ Method 1: Using `SparkSession.builder.config()`
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .appName("ConfigExample") \
+    .config("spark.executor.memory", "2g") \
+    .config("spark.executor.cores", "2") \
+    .config("spark.sql.shuffle.partitions", "50") \
+    .getOrCreate()
+````
+
+| Config Key                     | Description                                 |
+| ------------------------------ | ------------------------------------------- |
+| `spark.executor.memory`        | Amount of memory per executor (e.g., 2g)    |
+| `spark.executor.cores`         | Number of cores per executor                |
+| `spark.sql.shuffle.partitions` | Number of partitions for shuffle operations |
+
+### ✅ Method 2: Using `SparkConf` with `SparkContext`
+
+```python
+from pyspark import SparkConf, SparkContext
+from pyspark.sql import SparkSession
+
+conf = SparkConf() \
+    .setAppName("ConfigWithSparkConf") \
+    .set("spark.executor.memory", "3g") \
+    .set("spark.executor.instances", "4")
+
+sc = SparkContext(conf=conf)
+
+# Create SparkSession from existing SparkContext
+spark = SparkSession(sc)
+```
+
+### 📌 Example: Read CSV with Configs
+
+```python
+spark = SparkSession.builder \
+    .appName("ReadCSVWithConfig") \
+    .config("spark.sql.shuffle.partitions", "10") \
+    .getOrCreate()
+
+df = spark.read.option("header", True).csv("data.csv")
+df.show()
+```
 
 
 
