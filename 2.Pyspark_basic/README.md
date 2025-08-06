@@ -211,6 +211,95 @@ spark = SparkSession.builder \
 df = spark.read.option("header", True).csv("data.csv")
 df.show()
 ```
+### ⚙️ General Application Configs
+
+| Config Key               | Description                            | Example Value     | Code Example                                                                 |
+|--------------------------|----------------------------------------|-------------------|------------------------------------------------------------------------------|
+| `spark.app.name`         | Name of your Spark app                 | `MyApp`           | `SparkSession.builder.appName("MyApp")`                                     |
+| `spark.master`           | Cluster manager                        | `local[*]`        | `SparkSession.builder.master("local[*]")`                                   |
+| `spark.driver.memory`    | Memory for driver                      | `1g`              | `.config("spark.driver.memory", "1g")`                                      |
+| `spark.driver.cores`     | Cores for driver (K8s)                 | `1`               | `.config("spark.driver.cores", "1")`                                        |
+| `spark.driver.maxResultSize` | Max size of result from driver     | `1g`              | `.config("spark.driver.maxResultSize", "1g")`                               |
+
+### 🧵 Executor Configs
+
+| Config Key                 | Description                          | Example Value | Code Example                                        |
+|----------------------------|--------------------------------------|---------------|-----------------------------------------------------|
+| `spark.executor.memory`    | Memory per executor                  | `2g`          | `.config("spark.executor.memory", "2g")`            |
+| `spark.executor.cores`     | Cores per executor                   | `2`           | `.config("spark.executor.cores", "2")`              |
+| `spark.executor.instances` | Number of executors                  | `4`           | `.config("spark.executor.instances", "4")`          |
+| `spark.executor.extraJavaOptions` | Extra JVM opts              | `-XX:+PrintGCDetails` | `.config("spark.executor.extraJavaOptions", "-XX:+PrintGCDetails")` |
+
+### 🔄 Shuffle & Parallelism
+
+| Config Key                     | Description                              | Example Value | Code Example                                           |
+|--------------------------------|------------------------------------------|---------------|--------------------------------------------------------|
+| `spark.default.parallelism`    | Default RDD partition count              | `8`           | `.config("spark.default.parallelism", "8")`            |
+| `spark.sql.shuffle.partitions` | Partitions for SQL shuffles              | `200`         | `.config("spark.sql.shuffle.partitions", "200")`       |
+| `spark.shuffle.compress`       | Enable shuffle compression               | `true`        | `.config("spark.shuffle.compress", "true")`            |
+| `spark.shuffle.spill.compress` | Compress spilled shuffle data            | `true`        | `.config("spark.shuffle.spill.compress", "true")`      |
+
+### 🧠 Memory Management
+
+| Config Key                     | Description                              | Example Value | Code Example                                           |
+|--------------------------------|------------------------------------------|---------------|--------------------------------------------------------|
+| `spark.memory.fraction`        | JVM heap for execution + storage         | `0.6`         | `.config("spark.memory.fraction", "0.6")`              |
+| `spark.memory.storageFraction` | JVM heap for cached data                 | `0.5`         | `.config("spark.memory.storageFraction", "0.5")`       |
+| `spark.memory.offHeap.enabled` | Enable off-heap memory                   | `true`        | `.config("spark.memory.offHeap.enabled", "true")`      |
+| `spark.memory.offHeap.size`    | Size of off-heap memory                  | `512m`        | `.config("spark.memory.offHeap.size", "512m")`         |
+
+### 🗂️ Data Sources
+
+| Config Key                              | Description                                | Example Value | Code Example                                           |
+|-----------------------------------------|--------------------------------------------|---------------|--------------------------------------------------------|
+| `spark.sql.sources.partitionOverwriteMode` | Overwrite mode                           | `dynamic`     | `.config("spark.sql.sources.partitionOverwriteMode", "dynamic")` |
+| `spark.sql.files.maxPartitionBytes`    | Max size per file partition                | `134217728`   | `.config("spark.sql.files.maxPartitionBytes", "134217728")`       |
+| `spark.sql.files.openCostInBytes`      | File open cost in bytes                    | `4194304`     | `.config("spark.sql.files.openCostInBytes", "4194304")`           |
+
+### 🔐 Security
+
+| Config Key                 | Description                              | Example Value | Code Example                                     |
+|----------------------------|------------------------------------------|---------------|--------------------------------------------------|
+| `spark.authenticate`       | Enable Spark authentication              | `true`        | `.config("spark.authenticate", "true")`          |
+| `spark.authenticate.secret`| Shared secret for auth                   | `your_secret` | `.config("spark.authenticate.secret", "your_secret")` |
+| `spark.ssl.enabled`        | Enable SSL                               | `true`        | `.config("spark.ssl.enabled", "true")`           |
+
+
+### 🌐 External Systems (S3, Hive, etc.)
+
+| Config Key                        | Description                              | Example Value       | Code Example                                                       |
+|-----------------------------------|------------------------------------------|---------------------|--------------------------------------------------------------------|
+| `spark.hadoop.fs.s3a.access.key`  | AWS access key                           | `AKIA...`           | `.config("spark.hadoop.fs.s3a.access.key", "AKIA...")`             |
+| `spark.hadoop.fs.s3a.secret.key`  | AWS secret key                           | `xyz123...`         | `.config("spark.hadoop.fs.s3a.secret.key", "xyz123...")`           |
+| `spark.sql.catalogImplementation`| Catalog impl: in-memory or hive          | `hive`              | `.config("spark.sql.catalogImplementation", "hive")`               |
+| `spark.sql.warehouse.dir`        | Hive warehouse directory                 | `/user/hive/warehouse` | `.config("spark.sql.warehouse.dir", "/user/hive/warehouse")`     |
+
+
+
+### 🧪 Debugging and Logging
+
+| Config Key                | Description                           | Example Value       | Code Example                                      |
+|---------------------------|---------------------------------------|---------------------|---------------------------------------------------|
+| `spark.eventLog.enabled` | Enable Spark event logging            | `true`              | `.config("spark.eventLog.enabled", "true")`       |
+| `spark.eventLog.dir`     | Location to store Spark event logs    | `hdfs:///spark/logs`| `.config("spark.eventLog.dir", "hdfs:///spark/logs")` |
+| `spark.ui.enabled`       | Enable Spark Web UI                   | `true`              | `.config("spark.ui.enabled", "true")`             |
+| `spark.ui.port`          | Port for Web UI                       | `4040`              | `.config("spark.ui.port", "4040")`                |
+
+
+### 🛠️ Example: Full Config with SparkSession
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .appName("FullConfigExample") \
+    .master("local[*]") \
+    .config("spark.executor.memory", "4g") \
+    .config("spark.executor.cores", "2") \
+    .config("spark.sql.shuffle.partitions", "50") \
+    .config("spark.eventLog.enabled", "true") \
+    .getOrCreate()
+
 
 
 
