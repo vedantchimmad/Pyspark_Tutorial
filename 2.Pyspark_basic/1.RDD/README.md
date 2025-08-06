@@ -1,118 +1,81 @@
-# RDD
+# 🔹 RDD (Resilient Distributed Dataset) in PySpark
 
 ---
-###  RDD(Resilient distributed dataset)
-*	RDD (Resilient Distributed Dataset) is a fundamental building block of PySpark which is fault-tolerant, immutable distributed collections of objects.
-*	RDD’s can have a name and unique identifier (id)
+### 📘 What is an RDD?
 
-#### RDD benefits
-* **In-Memory Processing** : PySpark loads the data from disk and process in memory and keeps the data in memory
-* **Immutability** : RDD’s are immutable in nature meaning, once RDDs are created you cannot modify. When we apply transformations on RDD, PySpark creates a new RDD and maintains the RDD Lineage.
-* **Fault Tolerance** : PySpark operates on fault-tolerant data stores on HDFS, S3 e.t.c hence any RDD operation fails, it automatically reloads the data from other partitions.
-* **Lazy Evolution** : PySpark does not evaluate the RDD transformations as they appear/encountered, evaluates the all transformation when it sees the first RDD action.
-* **Partitioning** : When you create RDD from a data, It by default partitions the elements in a RDD. By default, it partitions to the number of cores available.
-#### Creating RDD:
-*	Parallelize()
-*	Referencing data sets in external storage
+RDD stands for **Resilient Distributed Dataset**, the **core data structure** of Apache Spark.  
+It is an immutable, distributed collection of objects that can be processed in parallel.
 
-**1)	Parallelize**
+---
 
-*	PySpark `parallelize()` is a function in SparkContext and is used to create an RDD from a list collection.
+### 💡 Key Properties
+
+| Property       | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| **Resilient**  | Fault-tolerant and can recover from node failures using lineage information |
+| **Distributed**| Data is split across multiple nodes in the cluster                          |
+| **Immutable**  | Once created, it cannot be modified                                          |
+| **Lazy Eval**  | Transformations are lazy — computed only when an action is called           |
+
+## 🔧 How to Create RDDs
+
+### ✅ 1. From a Python Collection
+
 ```python
-import pyspark
-from pyspark.sql import SparkSession
+from pyspark import SparkContext
 
-spark = SparkSession.builder.appName('parallelize').getOrCreate()
-sparkContext=spark.sparkContext
-rdd=sparkContext.parallelize([1,2,3,4,5])
-rddCollect = rdd.collect()
-print("Number of Partitions: "+str(rdd.getNumPartitions()))
-print("Action: First element: "+str(rdd.first()))
-print(rddCollect)
+sc = SparkContext.getOrCreate()
+
+data = [1, 2, 3, 4, 5]
+rdd = sc.parallelize(data)
 ```
-**2)Referencing data sets from external storage**
-
-Reading CSV files in data frame
+### ✅ 2. From External File
 ```python
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.master("local[1]") \
-      .appName("SparkByExamples.com") \
-      .getOrCreate()
-
-df = spark.read.csv("/tmp/resources/zipcodes.csv")
-df.printSchema()
-             or
-df = spark.read.format("csv")
-.load("/tmp/resources/zipcodes.csv")
-            or
-df = spark.read.format("org.apache.spark.sql.csv")
-.load("/tmp/resources/zipcodes.csv")
-df.printSchema()
+rdd = sc.textFile("data.txt")
 ```
-Writing CSV file
+### 🔄 RDD Transformations (Lazy)
+| Transformation  | Description                                              | Example                            |
+| --------------- | -------------------------------------------------------- | ---------------------------------- |
+| `map(func)`     | Returns a new RDD by applying a function to each element | `rdd.map(lambda x: x * 2)`         |
+| `filter(func)`  | Filters elements matching the condition                  | `rdd.filter(lambda x: x > 3)`      |
+| `flatMap(func)` | Similar to `map`, but flattens results                   | `rdd.flatMap(lambda x: x.split())` |
+| `distinct()`    | Removes duplicates                                       | `rdd.distinct()`                   |
+| `union(other)`  | Combines two RDDs                                        | `rdd1.union(rdd2)`                 |
+
+### ⚡ RDD Actions (Trigger Execution)
+| Action         | Description                        | Example                          |
+| -------------- | ---------------------------------- | -------------------------------- |
+| `collect()`    | Returns all elements to driver     | `rdd.collect()`                  |
+| `count()`      | Returns number of elements         | `rdd.count()`                    |
+| `first()`      | Returns first element              | `rdd.first()`                    |
+| `take(n)`      | Returns first `n` elements         | `rdd.take(3)`                    |
+| `reduce(func)` | Aggregates elements using function | `rdd.reduce(lambda x, y: x + y)` |
+
+### 🔍 Example: Transformation & Action
 ```python
-df2.write.mode('overwrite').csv("/tmp/spark_output/zipcodes")
-     or 
-df2.write.format("csv").mode('overwrite').save("/tmp/spark_output/zipcodes")
+rdd = sc.parallelize([1, 2, 3, 4, 5])
+
+# Transformation
+mapped_rdd = rdd.map(lambda x: x * x)
+
+# Action
+result = mapped_rdd.collect()
+print(result)  # Output: [1, 4, 9, 16, 25]
 ```
-### Repartition and Coalesce
-Sometimes we may need to repartition the RDD, 
+### 🧠 When to Use RDD?
+| Use Case                                 | Why RDD?                             |
+| ---------------------------------------- | ------------------------------------ |
+| Low-level transformations/control needed | Gives full control over computation  |
+| Unstructured/complex data processing     | More flexible than DataFrames        |
+| Custom partitioning                      | RDDs allow user-defined partitioning |
+| Functional-style programming preference  | Supports map/filter/reduce natively  |
 
-PySpark provides two ways to repartition
-1. first using `repartition()` method which shuffles data from all nodes also called full shuffle 
-2. `coalesce()` method which shuffle data from minimum nodes, for examples if you have data in 4 partitions and doing coalesce(2) moves data from just 2 nodes.  
-#### RDD operation:
-1.    RDD Transformation
-2.    RDD action
-
-**1)	RDD Transformation**
-
-Transformations are lazy operations, instead of updating an RDD, these operations return another RDD.
-* **Narrow transformation**
-
-Narrow transformations are the result of `map()` and `filter()` functions and these compute data that live on a single partition meaning there will not be any data movement between partitions to execute narrow transformations.
->[!Example:]
-> 
->map(), mapPartition(), flatMap(), filter(), union()
-
-* **Wider transformation**
-
-Wider transformations are the result of groupByKey() and reduceByKey() functions and these compute data that live on many partitions meaning there will be data movements between partitions to execute wider transformations.
->[!Example:]
->
->groupByKey(), aggregateByKey(), aggregate(), join(), repartition()
-
-**2)	RDD Action**
-
-return the values from an RDD to a driver program.
->[!Example:]
-> 
->Count(),first(),max(),reduce(),take(),collect()
-
-**Types of RDD:**
-* PairRDDFunctions or PairRDD 
-* ShuffledRDD
-* DoubleRDD  
-* SequenceFileRDD
-* HadoopRDD
-* ParallelCollectionRDD
-
-#### Create of empty RDD
-**_Create RDD_**
-
-_1.	Create empty RDD using emptyRDD():_
+### 🔄 Convert Between RDD and DataFrame
 ```python
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+# RDD to DataFrame
+rdd = sc.parallelize([(1, "Alice"), (2, "Bob")])
+df = rdd.toDF(["id", "name"])
 
-#Creates Empty RDD
-emptyRDD = spark.sparkContext.emptyRDD()
-print(emptyRDD)
-```
-
-_2.	Create empty RDD using parallelize()_
-```python
- #Creates Empty RDD using parallelize
-rdd2= spark.sparkContext.parallelize([])
-print(rdd2)
+# DataFrame to RDD
+rdd2 = df.rdd
 ```
