@@ -1,101 +1,101 @@
-# StructType,StructField and Column
+
+# 🏷️ PySpark Classes
 
 ---
-* PySpark StructType & StructField classes are used to programmatically specify the schema to the DataFrame 
-* create complex columns like nested struct, array, and map columns. 
-* StructType is a collection of StructField’s that defines column name, column data type
+PySpark is built using a set of core classes and APIs that enable distributed data processing. These classes represent entry points, data abstractions, configurations, and utilities that interact with the Spark engine.
+
+---
+
+## 🔰 Core PySpark Classes
+
+| Class Name             | Description                                                                 |
+|------------------------|-----------------------------------------------------------------------------|
+| `SparkSession`         | Entry point to DataFrame and SQL functionality                             |
+| `SparkContext`         | Entry point to low-level Spark RDD API                                     |
+| `RDD`                  | Immutable, distributed collection of objects                               |
+| `DataFrame`            | Distributed data with schema; table-like                                   |
+| `Row`                  | Represents a single row of a DataFrame                                     |
+| `Column`               | Represents a column in a DataFrame, used in expressions                    |
+| `StructType`           | Defines the schema of a DataFrame                                           |
+| `StructField`          | Describes a field in the schema (name, type, nullable)                     |
+| `SQLContext`           | Legacy class to work with structured data; replaced by `SparkSession`      |
+| `DataFrameReader`      | Helps read data into a DataFrame                                            |
+| `DataFrameWriter`      | Helps write DataFrame to external sources                                   |
+| `Broadcast`            | Used to broadcast variables to all nodes                                   |
+| `Accumulator`          | Used to accumulate values across workers (now deprecated in favor of AccumulatorV2) |
+| `Window`               | Defines window specifications for window functions                         |
+| `GroupData`            | Intermediate result after `groupBy`, supports aggregation functions         |
+
+---
+
+## 🔍 Example Usage of Common Classes
+
+### ✅ SparkSession
 
 ```python
-import pyspark
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType,StructField, StringType, IntegerType
 
-spark = SparkSession.builder.master("local[1]") \
-.appName('SparkByExamples.com') \
-.getOrCreate()
+spark = SparkSession.builder.appName("Example").getOrCreate()
+````
 
-data = [("James","","Smith","36636","M",3000),
-("Michael","Rose","","40288","M",4000),
-("Robert","","Williams","42114","M",4000),
-("Maria","Anne","Jones","39192","F",4000),
-("Jen","Mary","Brown","","F",-1)
-]
+### ✅ RDD
 
-schema = StructType([ \
-StructField("firstname",StringType(),True), \
-StructField("middlename",StringType(),True), \
-StructField("lastname",StringType(),True), \
-StructField("id", StringType(), True), \
-StructField("gender", StringType(), True), \
-StructField("salary", IntegerType(), True) \
+```python
+rdd = spark.sparkContext.parallelize([1, 2, 3])
+```
+
+### ✅ DataFrame and Row
+
+```python
+from pyspark.sql import Row
+
+data = [Row(name="Alice", age=30), Row(name="Bob", age=25)]
+df = spark.createDataFrame(data)
+df.show()
+```
+
+### ✅ StructType and StructField
+
+```python
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+schema = StructType([
+    StructField("name", StringType(), True),
+    StructField("age", IntegerType(), True)
 ])
 
-df = spark.createDataFrame(data=data,schema=schema)
+data = [("Alice", 30), ("Bob", 25)]
+df = spark.createDataFrame(data, schema)
 df.printSchema()
-df.show(truncate=False)
-```
-* Adding and changing the struct of the dataframe
-
-Using PySpark SQL function struct(), we can change the struct of the existing DataFrame and add a new StructType to it.
-```python
-from pyspark.sql.functions import col,struct,when
-updatedDF = df2.withColumn("OtherInfo",
-struct(col("id").alias("identifier"),
-col("gender").alias("gender"),
-col("salary").alias("salary"),
-when(col("salary").cast(IntegerType()) < 2000,"Low")
-.when(col("salary").cast(IntegerType()) < 4000,"Medium")
-.otherwise("High").alias("Salary_Grade")
-)).drop("id","gender","salary")
-
-updatedDF.printSchema()
-updatedDF.show(truncate=False)
 ```
 
-# Column class
-* `pyspark.sql.Column` class provides several functions to work with DataFrame to manipulate the Column values, 
-* evaluate the boolean expression to filter rows, retrieve a value or part of a value from a DataFrame column, and to work with list, map & struct columns.
-* **Create column class object using lit()**
+### ✅ Column Operations
+
 ```python
-from pyspark.sql.functions import lit
-colObj = lit("sparkbyexamples.com")
-```
-* **Access column from data frame**
-```python
-data=[("James",23),("Ann",40)]
-df=spark.createDataFrame(data).toDF("name.fname","gender")
-df.printSchema()
-#root
-# |-- name.fname: string (nullable = true)
-# |-- gender: long (nullable = true)
-
-# Using DataFrame object (df)
-df.select(df.gender).show()
-df.select(df["gender"]).show()
-
-#Accessing column name with dot (with backticks)
-df.select(df["`name.fname`"]).show()
-
-#Using SQL col() function
 from pyspark.sql.functions import col
-df.select(col("gender")).show()
 
-#Accessing column name with dot (with backticks)
-df.select(col("`name.fname`")).show()
+df.select(col("name"), col("age") + 1).show()
 ```
-* **Column  operator**
+
+### ✅ Window Functions
+
 ```python
-data=[(100,2,1),(200,3,4),(300,4,4)]
-df=spark.createDataFrame(data).toDF("col1","col2","col3")
+from pyspark.sql.window import Window
+from pyspark.sql.functions import row_number
 
-#Arthmetic operations
-df.select(df.col1 + df.col2).show()
-df.select(df.col1 - df.col2).show()
-df.select(df.col1 * df.col2).show()
-df.select(df.col1 / df.col2).show()
-df.select(df.col1 % df.col2).show()
-
-df.select(df.col2 > df.col3).show()
-df.select(df.col2 < df.col3).show()
-df.select(df.col2 == df.col3).show()
+window_spec = Window.partitionBy("department").orderBy("salary")
+df.withColumn("rank", row_number().over(window_spec)).show()
 ```
+
+---
+
+## 🧠 Summary
+
+| Category          | Class Examples                       |
+| ----------------- | ------------------------------------ |
+| Entry Point       | `SparkSession`, `SparkContext`       |
+| Data Abstraction  | `RDD`, `DataFrame`, `Row`, `Column`  |
+| Schema Definition | `StructType`, `StructField`          |
+| IO Helpers        | `DataFrameReader`, `DataFrameWriter` |
+| Distributed Utils | `Broadcast`, `Accumulator`           |
+| SQL & Windowing   | `SQLContext`, `Window`, `GroupData`  |
