@@ -70,42 +70,96 @@ df_filtered = df.filter(df["age"] > 25)
 df_filtered.show()
 ```
 ---
-### What is SparkSession
-	It is an entry point to underlying PySpark functionality in order to programmatically create PySpark RDD, DataFrame.
 
-*	You should also know that SparkSession internally creates SparkConfig and SparkContext with the configuration provided with SparkSession.
-*	You can create as many SparkSession as you want in a PySpark application using either `SparkSession.builder()` or `SparkSession.newSession()`
+## 🔹 SparkSession in PySpark
 
-#### Create SparkSesstion:
-In order to create SparkSession programmatically (in .py file) in PySpark, you need to use the builder pattern method builder() as explained below. getOrCreate() method returns an already existing SparkSession; if not exists, it creates a new SparkSession.
+### 📘 What is `SparkSession`?
+
+`SparkSession` is the **entry point** to programming with Spark using the **DataFrame** and **Dataset** API.  
+* It replaces the older `SQLContext` and `HiveContext` from previous Spark versions (before 2.0).
+
+---
+
+### 🧠 Purpose of `SparkSession`
+
+- Provides a unified interface for:
+  - Reading and writing data
+  - Configuring Spark
+  - Working with SQL, DataFrames, Datasets, Streaming, and Machine Learning APIs
+- Acts as the **starting point** for all Spark functionality in PySpark applications
+
+---
+
+### 🔧 Syntax
 
 ```python
-import pyspark
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.master("local[1]") \
-.appName('Spark session') \
-.getOrCreate()
-```
-Spark config:
-```python
 spark = SparkSession.builder \
-.master("local[1]") \
-.appName("Spark session") \
-.config("spark.some.config.option", "config-value") \
-.getOrCreate()
+    .appName("YourAppName") \
+    .getOrCreate()
+````
+
+| Method           | Description                                     |
+| ---------------- | ----------------------------------------------- |
+| `.builder`       | Entry point to configure the session            |
+| `.appName()`     | Assigns a name to your Spark application        |
+| `.getOrCreate()` | Creates a new session or reuses an existing one |
+
+---
+
+### 📥 Example: Create SparkSession and Load Data
+
+```python
+from pyspark.sql import SparkSession
+
+# Create SparkSession
+spark = SparkSession.builder \
+    .appName("ExampleSparkSession") \
+    .getOrCreate()
+
+# Load a CSV file into a DataFrame
+df = spark.read.csv("employees.csv", header=True, inferSchema=True)
+
+# Display the schema
+df.printSchema()
+
+# Show top rows
+df.show()
 ```
-`master()` – If you are running it on the cluster you need to use your master name as an argument to master(). 
-*	Use `local[x]` when running in Standalone mode. x should be an integer value and should be greater than 0
-*   this represents how many partitions it should create when using RDD, DataFrame, and Dataset. Ideally
 
-`appName()` – Used to set your application name.
+---
 
-`getOrCreate()` – This returns a SparkSession object if already exists, and creates a new one if not exist.
+### 🔍 Common Methods from SparkSession
 
-### SparkContext:
-* **pyspark.SparkContext** is an entry point to the PySpark functionality that is used to communicate with the cluster and to create an RDD, accumulator, and broadcast variables.
->[!Note]
->you can create only `one SparkContext per JVM`, in order to create another first you need to stop the existing one using `stop()` method.
+| Method       | Purpose                                                         |
+| ------------ | --------------------------------------------------------------- |
+| `read`       | Access DataFrameReader to read files (CSV, JSON, Parquet, etc.) |
+| `readStream` | Read streaming data                                             |
+| `sql()`      | Run SQL queries directly on DataFrames                          |
+| `catalog`    | Interact with metastore (tables, databases)                     |
+| `stop()`     | Stop the SparkSession and release resources                     |
+
+---
+
+### 📎 Notes
+
+* Only **one active SparkSession** should exist per application.
+* Calling `getOrCreate()` ensures you **don't create duplicate sessions**.
+* SparkSession automatically creates a `SparkContext` accessible via `spark.sparkContext`.
+
+---
+
+### 📌 SparkSession vs SparkContext
+
+| SparkContext                | SparkSession                       |
+| --------------------------- | ---------------------------------- |
+| Entry point for RDD API     | Entry point for DataFrame API      |
+| Used before Spark 2.0       | Introduced in Spark 2.0+           |
+| Needs SQLContext separately | Unifies SQLContext and HiveContext |
+
+---
+
+
 
 
