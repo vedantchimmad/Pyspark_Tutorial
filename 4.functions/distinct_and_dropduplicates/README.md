@@ -1,49 +1,107 @@
-# distinct and dropduplicates
+# 🔁 PySpark: `distinct()` and `dropDuplicates()`
+
+Both `distinct()` and `dropDuplicates()` are used to **remove duplicate rows** in a PySpark DataFrame, but they have important differences in behavior and usage.
 
 ---
-* PySpark `distinct()` function is used to drop/remove the duplicate rows (all columns) from DataFrame
-* `dropDuplicates()` is used to drop rows based on selected (one or multiple) columns. 
+
+## 🧱 Sample DataFrame
 
 ```python
-# Create dataframe
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import expr
+data = [
+    ("Alice", "Sales", 1000),
+    ("Alice", "Sales", 1000),
+    ("Bob", "HR", 1200),
+    ("Bob", "Finance", 1200),
+    ("Charlie", "HR", 1300)
+]
+columns = ["name", "dept", "salary"]
+df = spark.createDataFrame(data, columns)
+df.show()
+````
 
-# Create SparkSession
-spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+---
 
-# Prepare Data
-data = [("James", "Sales", 3000), \
-    ("Michael", "Sales", 4600), \
-    ("Robert", "Sales", 4100), \
-    ("Maria", "Finance", 3000), \
-    ("James", "Sales", 3000), \
-    ("Scott", "Finance", 3300), \
-    ("Jen", "Finance", 3900), \
-    ("Jeff", "Marketing", 3000), \
-    ("Kumar", "Marketing", 2000), \
-    ("Saif", "Sales", 4100) \
-  ]
+## ✅ 1. `distinct()` – Removes **entire duplicate rows**
 
-# Create DataFrame
-columns= ["employee_name", "department", "salary"]
-df = spark.createDataFrame(data = data, schema = columns)
-df.printSchema()
-df.show(truncate=False)
-```
-#### Get distinct rows()
 ```python
-distinctDF = df.distinct()
-print("Distinct count: "+str(distinctDF.count()))
-distinctDF.show(truncate=False)
-                  or
-df2 = df.dropDuplicates()
-print("Distinct count: "+str(df2.count()))
-df2.show(truncate=False)
+df.distinct().show()
 ```
-#### Distinct of selected multiple of columns
+
+### 🔍 Behavior:
+
+* Removes rows where **all column values** are the same.
+* Equivalent to `SELECT DISTINCT *` in SQL.
+
+---
+
+## ✅ 2. `dropDuplicates()` – Remove duplicates based on **specific columns**
+
 ```python
-dropDisDF = df.dropDuplicates(["department","salary"])
-print("Distinct count of department & salary : "+str(dropDisDF.count()))
-dropDisDF.show(truncate=False)
+df.dropDuplicates(["name"]).show()
+df.dropDuplicates(["dept", "salary"]).show()
 ```
+
+### 🔍 Behavior:
+
+* Keeps **first occurrence** of a duplicate based on given subset of columns.
+* Allows **column-based deduplication**.
+
+---
+
+## 📊 Comparison Table
+
+| Feature                | `distinct()`               | `dropDuplicates(cols)`              |
+| ---------------------- | -------------------------- | ----------------------------------- |
+| Scope                  | All columns                | Subset of columns                   |
+| Use-case               | Remove full row duplicates | Remove based on selected column(s)  |
+| SQL equivalent         | `SELECT DISTINCT *`        | `SELECT * FROM table GROUP BY cols` |
+| Custom columns allowed | ❌ No                       | ✅ Yes                               |
+
+---
+
+## 🧪 Example Output
+
+### Original DataFrame
+
+```
++-------+--------+------+
+|  name |   dept |salary|
++-------+--------+------+
+| Alice |  Sales |  1000|
+| Alice |  Sales |  1000|
+|   Bob |     HR |  1200|
+|   Bob |Finance |  1200|
+|Charlie|     HR |  1300|
++-------+--------+------+
+```
+
+### df.distinct()
+
+```
++-------+--------+------+
+|  name |   dept |salary|
++-------+--------+------+
+| Alice |  Sales |  1000|
+|   Bob |Finance |  1200|
+|   Bob |     HR |  1200|
+|Charlie|     HR |  1300|
++-------+--------+------+
+```
+
+### df.dropDuplicates(\["name"])
+
+```
++-------+--------+------+
+|  name |   dept |salary|
++-------+--------+------+
+| Alice |  Sales |  1000|
+|   Bob |     HR |  1200|
+|Charlie|     HR |  1300|
++-------+--------+------+
+```
+
+---
+
+✅ **Best Practice**:
+Use `dropDuplicates(["col1", "col2", ...])` when you want to control which duplicates are removed based on **business logic**.
+
