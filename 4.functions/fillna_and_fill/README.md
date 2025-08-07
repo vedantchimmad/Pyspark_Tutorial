@@ -1,39 +1,98 @@
-# Fillna and Fill
+# 🧼 PySpark: `fillna()` vs `fill()`
+
+Both `fillna()` and `fill()` are used to **replace NULL or missing values** in a PySpark DataFrame. `fill()` is just an alias for `fillna()`.
 
 ---
-* DataFrame.`fillna()` or DataFrameNaFunctions.`fill()` is used to replace NULL/None values on all or selected multiple DataFrame columns with either zero(0), empty string, space, or any constant literal values.
->Syntax
-> 
->fillna(value, subset=None)
-> 
->fill(value, subset=None)
-```python
-from pyspark.sql import SparkSession
-spark = SparkSession.builder \
-    .master("local[1]") \
-    .appName("SparkByExamples.com") \
-    .getOrCreate()
 
-filePath="resources/small_zipcode.csv"
-df = spark.read.options(header='true', inferSchema='true') \
-          .csv(filePath)
+## 🧱 Sample DataFrame
 
-df.printSchema()
-df.show(truncate=False)
-```
-#### Replace null/none value with Zero(0)
 ```python
-#Replace 0 for null for all integer columns
-df.na.fill(value=0).show()
+data = [
+    ("James", None, "M"),
+    ("Ann", "NY", None),
+    ("Tom", None, None)
+]
+columns = ["name", "city", "gender"]
+df = spark.createDataFrame(data, columns)
+df.show()
+````
 
-#Replace 0 for null on only population column 
-df.na.fill(value=0,subset=["population"]).show()
-#both statements yields the same output, since we have just an integer column population with null values Note that it replaces only Integer columns since our value is 0.
-```
-#### Replca Null/none value with string
+---
+
+## ✅ 1. `fillna()` – Replace `NULL` values
+
 ```python
-df.na.fill("").show(false)
-    Or
-df.na.fill("unknown",["city"]) \
-    .na.fill("",["type"]).show()
+# Fill all NULLs with same value
+df.fillna("Unknown").show()
+
+# Fill NULLs by specific column
+df.fillna({"city": "NoCity", "gender": "NoGender"}).show()
 ```
+
+---
+
+## ✅ 2. `fill()` – Exact same as `fillna()` (alias method)
+
+```python
+df.fill({"city": "NA", "gender": "NA"}).show()
+```
+
+---
+
+## 🧪 Output Example
+
+### Original DataFrame:
+
+```
++-----+----+------+
+| name|city|gender|
++-----+----+------+
+|James|null|     M|
+|  Ann|  NY|  null|
+|  Tom|null|  null|
++-----+----+------+
+```
+
+### df.fillna("Unknown")
+
+```
++-----+--------+--------+
+| name|    city|  gender|
++-----+--------+--------+
+|James| Unknown|       M|
+|  Ann|      NY| Unknown|
+|  Tom| Unknown| Unknown|
++-----+--------+--------+
+```
+
+### df.fillna({"city": "NoCity", "gender": "NoGender"})
+
+```
++-----+--------+---------+
+| name|    city|   gender|
++-----+--------+---------+
+|James| NoCity|        M|
+|  Ann|     NY| NoGender|
+|  Tom| NoCity| NoGender|
++-----+--------+---------+
+```
+
+---
+
+## 📊 Comparison Table
+
+| Feature               | `fillna()`                 | `fill()`                   |
+| --------------------- | -------------------------- | -------------------------- |
+| Purpose               | Fill NULLs                 | Fill NULLs (alias)         |
+| Fill all columns      | ✅                          | ✅                          |
+| Fill specific columns | ✅ with dict `{col: value}` | ✅ with dict `{col: value}` |
+| Numeric-only support  | ✅ with int/float           | ✅ with int/float           |
+| Alias method          | Main method                | Alias of `fillna()`        |
+
+---
+
+## 📝 Best Practice
+
+* Use `fillna()` explicitly for clarity.
+* Always prefer dictionary format `{col: value}` when filling specific columns.
+
