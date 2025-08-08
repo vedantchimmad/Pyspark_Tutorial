@@ -1,35 +1,118 @@
-# Pivote and Unpivote
+# 🔄 PySpark **Pivot** and **Unpivot**
+
+In PySpark, **Pivot** and **Unpivot** are used to reshape data —  
+**Pivot** transforms *rows → columns*, while **Unpivot** transforms *columns → rows*.
 
 ---
-* `pivot()` function is used to rotate/transpose the data from one column into multiple Dataframe columns and back using unpivot(). 
-* Pivot() It is an aggregation where one of the grouping columns values is transposed into individual columns with distinct data.
-```python
-import pyspark
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import expr
-#Create spark session
-data = [("Banana",1000,"USA"), ("Carrots",1500,"USA"), ("Beans",1600,"USA"), \
-("Orange",2000,"USA"),("Orange",2000,"USA"),("Banana",400,"China"), \
-("Carrots",1200,"China"),("Beans",1500,"China"),("Orange",4000,"China"), \
-("Banana",2000,"Canada"),("Carrots",2000,"Canada"),("Beans",2000,"Mexico")]
 
-columns= ["Product","Amount","Country"]
-df = spark.createDataFrame(data = data, schema = columns)
-df.printSchema()
-df.show(truncate=False)
-```
-#### Pivote()
+## 📌 1. Pivot
+
+### 🛠 Syntax
 ```python
-pivotDF = df.groupBy("Product").pivot("Country").sum("Amount")
-pivotDF.printSchema()
-pivotDF.show(truncate=False)
-```
-#### Unpivote()
+DataFrame.groupBy(grouping_columns).pivot(pivot_column, [values]).agg(aggregation)
+````
+
+| Parameter          | Description                                                                   |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `grouping_columns` | Column(s) to group the data before pivoting                                   |
+| `pivot_column`     | Column whose unique values will become new columns                            |
+| `values`           | Optional list of values to pivot (if omitted, Spark determines automatically) |
+| `aggregation`      | Aggregation function to apply to values                                       |
+
+---
+
+### 📍 Example: Pivot in PySpark
+
 ```python
-from pyspark.sql.functions import expr
-unpivotExpr = "stack(3, 'Canada', Canada, 'China', China, 'Mexico', Mexico) as (Country,Total)"
-unPivotDF = pivotDF.select("Product", expr(unpivotExpr)) \
-.where("Total is not null")
-unPivotDF.show(truncate=False)
-unPivotDF.show()
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import sum
+
+spark = SparkSession.builder.appName("PivotExample").getOrCreate()
+
+data = [
+    ("John", "Math", 80),
+    ("John", "Science", 90),
+    ("Mike", "Math", 70),
+    ("Mike", "Science", 85)
+]
+df = spark.createDataFrame(data, ["name", "subject", "score"])
+
+pivot_df = df.groupBy("name").pivot("subject").agg(sum("score"))
+pivot_df.show()
 ```
+
+**Output:**
+
+```
++----+----+-------+
+|name|Math|Science|
++----+----+-------+
+|Mike|  70|     85|
+|John|  80|     90|
++----+----+-------+
+```
+
+---
+
+## 📌 2. Unpivot (Melt)
+
+PySpark doesn’t have a direct **`unpivot()`** function like Pandas,
+but we can achieve it using `selectExpr` and `stack()`.
+
+---
+
+### 🛠 Syntax
+
+```python
+df.selectExpr(id_columns..., "stack(N, col1, 'name1', col2, 'name2', ...) as (col_name, value)")
+```
+
+| Parameter                      | Description                                         |
+| ------------------------------ | --------------------------------------------------- |
+| `N`                            | Number of columns to unpivot                        |
+| `col1, 'name1', col2, 'name2'` | Column name and corresponding label for melted rows |
+| `(col_name, value)`            | New column names for the melted result              |
+
+---
+
+### 📍 Example: Unpivot in PySpark
+
+```python
+unpivot_df = pivot_df.selectExpr(
+    "name",
+    "stack(2, Math, 'Math', Science, 'Science') as (subject, score)"
+)
+unpivot_df.show()
+```
+
+**Output:**
+
+```
++----+-------+-----+
+|name|subject|score|
++----+-------+-----+
+|Mike|   Math|   70|
+|Mike|Science|   85|
+|John|   Math|   80|
+|John|Science|   90|
++----+-------+-----+
+```
+
+---
+
+## 📊 Summary Table
+
+| Operation   | Purpose        | Key Function                  | Result Shape |
+| ----------- | -------------- | ----------------------------- | ------------ |
+| **Pivot**   | Rows → Columns | `pivot()` with `groupBy()`    | Wider        |
+| **Unpivot** | Columns → Rows | `stack()` with `selectExpr()` | Longer       |
+
+---
+
+## ⚡ Performance Tips
+
+* For **pivot**, always pre-filter data to reduce unnecessary columns.
+* Avoid pivoting on **high-cardinality columns** (can cause huge DataFrames).
+* For **unpivot**, stack function requires you to **manually specify** all columns.
+
+---
