@@ -1,59 +1,132 @@
-# groupBy
+# 📊 PySpark `groupBy()` Function
 
 ---
-* `groupBy()` function is used to collect the identical data into groups on DataFrame and perform count, sum, avg, min, max functions on the grouped data.
-```python
-# create dataframe
-simpleData = [("James","Sales","NY",90000,34,10000),
-    ("Michael","Sales","NY",86000,56,20000),
-    ("Robert","Sales","CA",81000,30,23000),
-    ("Maria","Finance","CA",90000,24,23000),
-    ("Raman","Finance","CA",99000,40,24000),
-    ("Scott","Finance","NY",83000,36,19000),
-    ("Jen","Finance","NY",79000,53,15000),
-    ("Jeff","Marketing","CA",80000,25,18000),
-    ("Kumar","Marketing","NY",91000,50,21000)
-  ]
+The `groupBy()` function in PySpark is used to **group data** in a DataFrame based on one or more columns.  
+It is similar to the SQL `GROUP BY` statement and is often followed by **aggregation functions** such as `count()`, `sum()`, `avg()`, `max()`, etc.
 
-schema = ["employee_name","department","state","salary","age","bonus"]
-df = spark.createDataFrame(data=simpleData, schema = schema)
-df.printSchema()
-df.show(truncate=False)
-```
-#### Group by on data frame columns
+---
+
+## 🛠 Syntax
+
 ```python
-df.groupBy("department").sum("salary").show(truncate=False)
-df.groupBy("department").count()
-df.groupBy("department").min("salary")
-df.groupBy("department").max("salary")
-df.groupBy("department").avg( "salary")
-df.groupBy("department").mean( "salary") 
-```
-#### Using multiple columns
+DataFrame.groupBy(*cols)
+````
+
+| Parameter | Description                                                |
+| --------- | ---------------------------------------------------------- |
+| `*cols`   | One or more column names or expressions to group the data. |
+
+---
+
+## ⚡ Key Points
+
+* Returns a **GroupedData** object.
+* Needs an **aggregation** to get meaningful results.
+* Can group by **one or multiple columns**.
+* Works similar to `GROUP BY` in SQL.
+
+---
+
+## 📌 Example 1: Group by Single Column
+
 ```python
-#GroupBy on multiple columns
-df.groupBy("department","state") \
-    .sum("salary","bonus") \
-    .show(false)
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+
+spark = SparkSession.builder.appName("GroupByExample").getOrCreate()
+
+data = [("Alice", "Math", 85),
+        ("Bob", "Math", 70),
+        ("Alice", "English", 95),
+        ("Bob", "English", 80)]
+
+df = spark.createDataFrame(data, ["name", "subject", "score"])
+
+df.groupBy("name").agg(F.avg("score").alias("avg_score")).show()
 ```
-#### Running more aggregates at a time
+
+**Output**
+
+```
++-----+---------+
+| name|avg_score|
++-----+---------+
+|Alice|     90.0|
+|  Bob|     75.0|
++-----+---------+
+```
+
+---
+
+## 📌 Example 2: Group by Multiple Columns
+
 ```python
-from pyspark.sql.functions import sum,avg,max
-df.groupBy("department") \
-    .agg(sum("salary").alias("sum_salary"), \
-         avg("salary").alias("avg_salary"), \
-         sum("bonus").alias("sum_bonus"), \
-         max("bonus").alias("max_bonus") \
-     ) \
+df.groupBy("name", "subject").agg(F.max("score").alias("max_score")).show()
 ```
-#### Using filter on aggregate data
+
+**Output**
+
+```
++-----+-------+---------+
+| name|subject|max_score|
++-----+-------+---------+
+|Alice|   Math|       85|
+|Alice|English|       95|
+|  Bob|   Math|       70|
+|  Bob|English|       80|
++-----+-------+---------+
+```
+
+---
+
+## 📌 Example 3: Multiple Aggregations
+
 ```python
-from pyspark.sql.functions import sum,avg,max
-df.groupBy("department") \
-    .agg(sum("salary").alias("sum_salary"), \
-      avg("salary").alias("avg_salary"), \
-      sum("bonus").alias("sum_bonus"), \
-      max("bonus").alias("max_bonus")) \
-    .where(col("sum_bonus") >= 50000) \
-    .show(truncate=False)
+df.groupBy("name").agg(
+    F.avg("score").alias("avg_score"),
+    F.min("score").alias("min_score"),
+    F.max("score").alias("max_score")
+).show()
 ```
+
+---
+
+## 📌 Example 4: Group by with Filter (HAVING Equivalent)
+
+```python
+df.groupBy("name").agg(F.avg("score").alias("avg_score")) \
+  .filter(F.col("avg_score") > 80) \
+  .show()
+```
+
+---
+
+## 📌 Example 5: Group by with SQL
+
+```python
+df.createOrReplaceTempView("students")
+
+spark.sql("""
+SELECT name, AVG(score) as avg_score
+FROM students
+GROUP BY name
+""").show()
+```
+
+---
+
+## 🚀 When to Use
+
+* Aggregating data based on categories.
+* Performing statistical analysis per group.
+* Implementing SQL-like `GROUP BY` in PySpark.
+
+---
+
+## 🛑 Common Mistakes
+
+* Forgetting to use aggregation after `groupBy()`.
+* Expecting `groupBy()` to return grouped data directly — it only returns a **GroupedData** object until you aggregate.
+
+---
+
