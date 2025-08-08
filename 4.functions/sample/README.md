@@ -1,43 +1,83 @@
-# Sample
+# 📌 PySpark Sampling
 
 ---
-* RDD.sample(), and RDD.takeSample() methods to get the random sampling subset from the large dataset,
->Syntax
-> 
->sample(withReplacement, fraction, seed=None)
 
-#### Fraction
-* By using fraction between 0 to 1, it returns the approximate number of the fraction of the dataset. 
-* For example, 0.1 returns 10% of the rows.
+## 🔹 Overview
+In PySpark, **sampling** is used to extract a random subset of data from a larger dataset without processing the entire dataset.
+
+There are two main methods:
+1. **`RDD.sample()`** → Returns a sampled subset as an RDD.
+2. **`RDD.takeSample()`** → Returns a fixed-size random sample as a Python list.
+
+---
+
+## 🔹 Syntax
+
+### 1️⃣ `sample()`  
+```python
+RDD.sample(withReplacement, fraction, seed=None)
+````
+
+| Parameter           | Description                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **withReplacement** | `True` → Sampling with replacement (same element can appear multiple times), `False` → Without replacement. |
+| **fraction**        | Fraction of the dataset to sample (e.g., `0.1` → 10%).                                                      |
+| **seed**            | Optional integer for reproducible results.                                                                  |
+
+---
+
+### 2️⃣ `takeSample()`
+
+```python
+RDD.takeSample(withReplacement, num, seed=None)
+```
+
+| Parameter           | Description                                |
+| ------------------- | ------------------------------------------ |
+| **withReplacement** | Same as above.                             |
+| **num**             | Number of elements to return.              |
+| **seed**            | Optional integer for reproducible results. |
+
+---
+
+## 🔹 Example: `sample()`
+
 ```python
 from pyspark.sql import SparkSession
-spark = SparkSession.builder \
-    .master("local[1]") \
-    .appName("SparkByExamples.com") \
-    .getOrCreate()
 
-df=spark.range(100)
-print(df.sample(0.06).collect())
+spark = SparkSession.builder.appName("SampleExample").getOrCreate()
+
+rdd = spark.sparkContext.parallelize(range(1, 21))
+
+# 30% sample without replacement
+sample_rdd = rdd.sample(False, 0.3, seed=42)
+print("Sample Data (RDD):", sample_rdd.collect())
 ```
-#### Seed
-* Every time you run a sample() function it returns a different set of sampling records, 
-* however sometimes during the development and testing phase you may need to regenerate the same sample every time as you need to compare the results from your previous run.
+
+---
+
+## 🔹 Example: `takeSample()`
+
 ```python
-print(df.sample(0.1,123).collect())
-
-print(df.sample(0.1,123).collect())
-
-print(df.sample(0.1,456).collect())
-```
-* first 2 examples I have used seed value 123 hence the sampling results are the same and for the last example, 
-* I have used 456 as a seed value generate different sampling records.
-
-#### withReplacement
-* some times you may need to get a random sample with repeated values. By using the value true, results in repeated values.
-```python
-print(df.sample(True,0.3,123).collect()) //with Duplicates
-
-print(df.sample(0.3,123).collect()) // No duplicates
+# Take 5 random elements without replacement
+sample_list = rdd.takeSample(False, 5, seed=42)
+print("Sample Data (List):", sample_list)
 ```
 
+---
+
+## 🔹 Output (Sample)
+
+```
+Sample Data (RDD): [1, 6, 8, 14, 17, 19]
+Sample Data (List): [1, 6, 8, 14, 17]
+```
+
+---
+
+✅ **Summary**
+
+* **`sample()`** → returns an **RDD** with a given fraction of data.
+* **`takeSample()`** → returns a **list** with a fixed number of elements.
+* **`seed`** makes results deterministic for reproducibility.
 
