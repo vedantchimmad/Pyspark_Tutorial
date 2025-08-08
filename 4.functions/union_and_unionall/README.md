@@ -1,53 +1,117 @@
-# Union and union all
+# 📌 PySpark — `union()` & `unionAll()`
 
 ---
-* PySpark `union()` and `unionAll()` transformations are used to merge two or more DataFrame’s of the same schema or structure.
-* Dataframe `union()` – union() method of the DataFrame is used to merge two DataFrame’s of the same structure/schema. If schemas are not the same it returns an error.
-* DataFrame `unionAll()` – unionAll() is deprecated since Spark “2.0.0” version and replaced with union().
->[!Note]:
-> 
->In other SQL languages, Union eliminates the duplicates but UnionAll merges two datasets including duplicate records.
-```python
-#First DataFrame
 
-import pyspark
+## 🔹 Overview
+In PySpark, **`union()`** and **`unionAll()`** are used to combine **two DataFrames with the same schema** (same number of columns and same column names & data types).
+
+💡 **Difference:**
+- **`union()`** → Removes duplicate rows (like SQL `UNION`).
+- **`unionAll()`** → Keeps all rows, including duplicates (like SQL `UNION ALL`).
+
+⚠️ **Note:** In Spark 2.0+, `unionAll()` was deprecated and replaced by `union()` (which works like `UNION ALL`).  
+If you want duplicate removal, use `union().distinct()`.
+
+---
+
+## 🔹 Syntax
+```python
+DataFrame1.union(DataFrame2)
+DataFrame1.unionAll(DataFrame2)   # Deprecated
+````
+
+| Parameter      | Description                                           |
+| -------------- | ----------------------------------------------------- |
+| **DataFrame2** | Another DataFrame with the same schema as DataFrame1. |
+
+---
+
+## 🔹 Example — `union()` (with duplicate removal)
+
+```python
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+spark = SparkSession.builder.appName("UnionExample").getOrCreate()
 
-simpleData = [("James","Sales","NY",90000,34,10000), \
-    ("Michael","Sales","NY",86000,56,20000), \
-    ("Robert","Sales","CA",81000,30,23000), \
-    ("Maria","Finance","CA",90000,24,23000) \
-  ]
+data1 = [("Alice", 25), ("Bob", 30)]
+data2 = [("Cathy", 28), ("Bob", 30)]
 
-columns= ["employee_name","department","state","salary","age","bonus"]
-df = spark.createDataFrame(data = simpleData, schema = columns)
-df.printSchema()
-df.show(truncate=False)
+columns = ["Name", "Age"]
 
-#Second DataFrame
-simpleData2 = [("James","Sales","NY",90000,34,10000), \
-    ("Maria","Finance","CA",90000,24,23000), \
-    ("Jen","Finance","NY",79000,53,15000), \
-    ("Jeff","Marketing","CA",80000,25,18000), \
-    ("Kumar","Marketing","NY",91000,50,21000) \
-  ]
-columns2= ["employee_name","department","state","salary","age","bonus"]
+df1 = spark.createDataFrame(data1, columns)
+df2 = spark.createDataFrame(data2, columns)
 
-df2 = spark.createDataFrame(data = simpleData2, schema = columns2)
-
-df2.printSchema()
-df2.show(truncate=False)
+# UNION (remove duplicates)
+df_union = df1.union(df2).distinct()
+df_union.show()
 ```
-### union()
-* DataFrame union() method merges two DataFrames and returns the new DataFrame with all rows from two Dataframes regardless of duplicate data.
+
+**Output**
+
+```
++-----+---+
+| Name|Age|
++-----+---+
+|Alice| 25|
+|  Bob| 30|
+|Cathy| 28|
++-----+---+
+```
+
+---
+
+## 🔹 Example — `unionAll()` / `union()` without distinct
+
 ```python
-unionDF = df.union(df2)
-unionDF.show(truncate=False)
+# UNION ALL (keeps duplicates)
+df_union_all = df1.union(df2)  # behaves like unionAll in Spark 2.x+
+df_union_all.show()
 ```
-### Merge without duplicate
+
+**Output**
+
+```
++-----+---+
+| Name|Age|
++-----+---+
+|Alice| 25|
+|  Bob| 30|
+|Cathy| 28|
+|  Bob| 30|
++-----+---+
+```
+
+---
+
+## 🔹 Example — SQL Equivalent
+
 ```python
-disDF = df.union(df2).distinct()
-disDF.show(truncate=False)
+df1.createOrReplaceTempView("table1")
+df2.createOrReplaceTempView("table2")
+
+# UNION (remove duplicates)
+spark.sql("SELECT * FROM table1 UNION SELECT * FROM table2").show()
+
+# UNION ALL (keep duplicates)
+spark.sql("SELECT * FROM table1 UNION ALL SELECT * FROM table2").show()
 ```
+
+---
+
+## 🔹 Key Points
+
+| Feature                   | `union()`                             | `unionAll()`                  |
+| ------------------------- | ------------------------------------- | ----------------------------- |
+| Duplicates Removed?       | ✅ Yes (if `.distinct()` used)         | ❌ No                          |
+| Deprecated?               | No                                    | ✅ Yes (use `union()` instead) |
+| Schema Matching Required? | ✅ Yes                                 | ✅ Yes                         |
+| Performance               | Slightly slower if `.distinct()` used | Faster (no duplicate removal) |
+
+---
+
+✅ **Summary:**
+
+* Use `union()` in Spark 2.x+ for **both** `UNION` and `UNION ALL` behavior.
+* To remove duplicates → `df1.union(df2).distinct()`
+* To keep duplicates → `df1.union(df2)` (default behavior).
+
