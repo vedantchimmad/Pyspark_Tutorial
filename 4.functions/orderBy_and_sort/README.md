@@ -1,46 +1,97 @@
-# OrderBy and Sort
+# 📊 PySpark `orderBy()` vs `sort()`
 
 ---
-* You can use either `sort()` or `orderBy()` function of PySpark DataFrame to sort DataFrame by ascending or descending order based on single or multiple columns
+In PySpark, both **`orderBy()`** and **`sort()`** are used to sort the rows of a DataFrame.  
+They are **functionally equivalent**, but there are slight differences in usage preference.
+
+---
+
+## 🛠 Syntax
+
 ```python
-# create dataframe
-simpleData = [("James","Sales","NY",90000,34,10000), \
-    ("Michael","Sales","NY",86000,56,20000), \
-    ("Robert","Sales","CA",81000,30,23000), \
-    ("Maria","Finance","CA",90000,24,23000), \
-    ("Raman","Finance","CA",99000,40,24000), \
-    ("Scott","Finance","NY",83000,36,19000), \
-    ("Jen","Finance","NY",79000,53,15000), \
-    ("Jeff","Marketing","CA",80000,25,18000), \
-    ("Kumar","Marketing","NY",91000,50,21000) \
-  ]
-columns= ["employee_name","department","state","salary","age","bonus"]
-df = spark.createDataFrame(data = simpleData, schema = columns)
-df.printSchema()
-df.show(truncate=False)
-```
-#### Sorting using sort()
+# orderBy
+DataFrame.orderBy(*cols, **kwargs)
+
+# sort
+DataFrame.sort(*cols, **kwargs)
+````
+
+| Parameter   | Description                                               |
+| ----------- | --------------------------------------------------------- |
+| `*cols`     | Column(s) to sort by. Can be `Column` objects or strings. |
+| `ascending` | Boolean or list of booleans. Default `True`.              |
+| `kwargs`    | Named arguments like `ascending=False`.                   |
+
+---
+
+## 🔍 Key Points
+
+* **`orderBy()`** is more commonly used in production code for **explicit sorting**.
+* **`sort()`** is an alias for `orderBy()`, and is often preferred for **quick sorting**.
+* Both support **ascending** and **descending** sorting.
+* Sorting is a **wide transformation** (can trigger a shuffle in the cluster).
+
+---
+
+## 📌 Example 1: Basic Ascending Sort
+
 ```python
-df.sort("department","state").show(truncate=False)
-df.sort(col("department"),col("state")).show(truncate=False)
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+
+spark = SparkSession.builder.appName("OrderBySortExample").getOrCreate()
+
+data = [("John", 25), ("Mike", 30), ("Sara", 22)]
+df = spark.createDataFrame(data, ["name", "age"])
+
+df.orderBy("age").show()
+df.sort("age").show()  # Same as orderBy
 ```
-#### Sorting using oerderBy()
+
+---
+
+## 📌 Example 2: Descending Sort
+
 ```python
-df.orderBy("department","state").show(truncate=False)
-df.orderBy(col("department"),col("state")).show(truncate=False)
+df.orderBy(F.col("age").desc()).show()
+df.sort(F.col("age").desc()).show()
 ```
-#### Sort by ascending
+
+---
+
+## 📌 Example 3: Multi-column Sort
+
 ```python
-df.sort(df.department.asc(),df.state.asc()).show(truncate=False)
-df.sort(col("department").asc(),col("state").asc()).show(truncate=False)
-df.orderBy(col("department").asc(),col("state").asc()).show(truncate=False)
+df.orderBy(F.col("age").asc(), F.col("name").desc()).show()
+df.sort(["age", "name"], ascending=[True, False]).show()
 ```
-#### Sort by descending
+
+---
+
+## 📌 Example 4: Using `ascending` Parameter
+
 ```python
-df.sort(df.department.asc(),df.state.desc()).show(truncate=False)
-df.sort(col("department").asc(),col("state").desc()).show(truncate=False)
-df.orderBy(col("department").asc(),col("state").desc()).show(truncate=False)
+df.orderBy("age", ascending=False).show()
+df.sort("age", ascending=False).show()
 ```
->[!Note]
-> 
->PySpark also provides `asc_nulls_first(`) and `asc_nulls_last()` and equivalent descending functions.
+
+---
+
+## ⚡ Performance Tip
+
+* Avoid unnecessary sorting in large datasets unless needed, as it can be expensive.
+* For partial ordering within groups, use `partitionBy` with `Window` functions instead of full sorting.
+
+---
+
+## 📌 Summary Table
+
+| Feature         | `orderBy()`                            | `sort()`                          |
+| --------------- | -------------------------------------- | --------------------------------- |
+| Purpose         | Sort DataFrame rows                    | Sort DataFrame rows               |
+| Syntax Style    | More explicit, preferred in production | Shorter alias                     |
+| Parameters      | Same as `sort()`                       | Same as `orderBy()`               |
+| Performance     | Same                                   | Same                              |
+| Common Use Case | Explicit ordering in pipelines         | Quick sorting in interactive work |
+
+---
