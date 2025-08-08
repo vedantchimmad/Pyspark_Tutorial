@@ -1,36 +1,120 @@
-# UnionByName
+# 📌 PySpark — `unionByName()`
 
 ---
-* to merge/union two DataFrames with column names.
-* this function also takes param allowMissingColumns with the value True if you have a different number of columns on two DataFrames.
+
+## 🔹 Overview
+In PySpark, **`unionByName()`** is used to combine **two DataFrames based on column names**, not column positions.  
+This is useful when:
+- DataFrames have **same column names but different order**.
+- DataFrames have **different column sets** (extra/missing columns).
+
+💡 Optional parameter **`allowMissingColumns`** allows you to union DataFrames even if one DataFrame has extra columns.  
+Missing columns will be filled with **`null`** values.
+
+---
+
+## 🔹 Syntax
+```python
+DataFrame1.unionByName(DataFrame2, allowMissingColumns=False)
+````
+
+| Parameter               | Description                                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **DataFrame2**          | Another DataFrame to union with.                                                                                     |
+| **allowMissingColumns** | Default `False`. If `True`, allows union of DataFrames with different columns by filling missing columns with nulls. |
+
+---
+
+## 🔹 Example 1 — Same Columns, Different Order
 
 ```python
 from pyspark.sql import SparkSession
-spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
 
-# Create DataFrame df1 with columns name, and id
-data = [("James",34), ("Michael",56), \
-        ("Robert",30), ("Maria",24) ]
+spark = SparkSession.builder.appName("UnionByNameExample").getOrCreate()
 
-df1 = spark.createDataFrame(data = data, schema=["name","id"])
-df1.printSchema()
+data1 = [("Alice", 25)]
+data2 = [(30, "Bob")]
 
-# Create DataFrame df2 with columns name and id
-data2=[(34,"James"),(45,"Maria"), \
-       (45,"Jen"),(34,"Jeff")]
+columns1 = ["Name", "Age"]
+columns2 = ["Age", "Name"]
 
-df2 = spark.createDataFrame(data = data2, schema = ["id","name"])
-df2.printSchema()
+df1 = spark.createDataFrame(data1, columns1)
+df2 = spark.createDataFrame(data2, columns2)
+
+# Union by column name
+df_union = df1.unionByName(df2)
+df_union.show()
 ```
-#### unionByName() with different number of columns
-* If you have a different number of columns then use allowMissingColumns=True. When using this, the result of the DataFrmae contains null values for the columns that are missing on the DataFrame.
+
+**Output**
+
+```
++-----+---+
+| Name|Age|
++-----+---+
+|Alice| 25|
+|  Bob| 30|
++-----+---+
+```
+
+✅ Column order differences handled automatically.
+
+---
+
+## 🔹 Example 2 — Different Number of Columns
+
 ```python
-# Create DataFrames with different column names
-df1 = spark.createDataFrame([[5, 2, 6]], ["col0", "col1", "col2"])
-df2 = spark.createDataFrame([[6, 7, 3]], ["col1", "col2", "col3"])
+data1 = [("Alice", 25)]
+data2 = [("Bob", 30, "NY")]
 
-# Using allowMissingColumns
-df3 = df1.unionByName(df2, allowMissingColumns=True)
-df3.printSchema
-df3.show()
+columns1 = ["Name", "Age"]
+columns2 = ["Name", "Age", "City"]
+
+df1 = spark.createDataFrame(data1, columns1)
+df2 = spark.createDataFrame(data2, columns2)
+
+# Allow missing columns → fills with nulls
+df_union = df1.unionByName(df2, allowMissingColumns=True)
+df_union.show()
 ```
+
+**Output**
+
+```
++-----+---+----+
+| Name|Age|City|
++-----+---+----+
+|Alice| 25|null|
+|  Bob| 30|  NY|
++-----+---+----+
+```
+
+✅ Missing `City` column in `df1` filled with `null`.
+
+---
+
+## 🔹 SQL Equivalent
+
+There is **no direct SQL equivalent** of `unionByName()` because SQL unions are **position-based**, not **name-based**.
+In SQL, you must **manually align column orders**.
+
+---
+
+## 🔹 Key Points
+
+| Feature                    | `union()`        | `unionByName()`                    |
+| -------------------------- | ---------------- | ---------------------------------- |
+| Match Based On             | Column position  | Column name                        |
+| Handles Different Order    | ❌ No             | ✅ Yes                              |
+| Handles Missing Columns    | ❌ No             | ✅ Yes (`allowMissingColumns=True`) |
+| Default Duplicate Handling | Keeps duplicates | Keeps duplicates                   |
+
+---
+
+✅ **Summary:**
+Use `unionByName()` when:
+
+* Column **order differs**.
+* You want **name-based matching**.
+* You need to **handle missing columns gracefully** with `allowMissingColumns=True`.
+
