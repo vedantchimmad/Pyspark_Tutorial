@@ -1,98 +1,225 @@
-# Join
+# 📌 PySpark — Joins
 
 ---
-* PySpark Join is used to combine two DataFrames and by chaining these you can join multiple DataFrames.
-* it supports all basic join type operations available in traditional SQL like INNER, LEFT OUTER, RIGHT OUTER, LEFT ANTI, LEFT SEMI, CROSS, SELF JOIN.
 
-### different Join Types PySpark supports.
-**Join String	Equivalent SQL Join**
+## 🔹 Overview
+In PySpark, **joins** are used to combine rows from two DataFrames based on matching column values.  
+The method **`DataFrame.join()`** supports multiple join types, similar to SQL.
 
-| inner                               | INNER JOIN        |
-|-------------------------------------|-------------------|
-| outer, full, fullouter, full_outer  | 	FULL OUTER JOIN  |
-| left, leftouter, left_outer         | 	LEFT JOIN        |
-| right, rightouter, right_outer      | 	RIGHT JOIN       |
-| cross	                           |                   |
-| anti, leftanti, left_anti           |                   |	
-| semi, leftsemi, left_semi           |                   |
-```python
-emp = [(1,"Smith",-1,"2018","10","M",3000), \
-    (2,"Rose",1,"2010","20","M",4000), \
-    (3,"Williams",1,"2010","10","M",1000), \
-    (4,"Jones",2,"2005","10","F",2000), \
-    (5,"Brown",2,"2010","40","",-1), \
-      (6,"Brown",2,"2010","50","",-1) \
-  ]
-empColumns = ["emp_id","name","superior_emp_id","year_joined", \
-       "emp_dept_id","gender","salary"]
+---
 
-empDF = spark.createDataFrame(data=emp, schema = empColumns)
-empDF.printSchema()
-empDF.show(truncate=False)
+## 🔹 Syntax
+```python
+DataFrame.join(
+    other,                # DataFrame to join with
+    on=None,               # Column(s) to join on
+    how=None               # Type of join (string)
+)
+````
 
-dept = [("Finance",10), \
-    ("Marketing",20), \
-    ("Sales",30), \
-    ("IT",40) \
-  ]
-deptColumns = ["dept_name","dept_id"]
-deptDF = spark.createDataFrame(data=dept, schema = deptColumns)
-deptDF.printSchema()
-deptDF.show(truncate=False)
-```
-#### Inner join()
-* Inner join is the default join in PySpark and it’s mostly used. 
-* This joins two datasets on key columns, where keys don’t match the rows get dropped from both datasets (emp & dept).
+| Parameter | Description                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------------- |
+| **other** | DataFrame to join with.                                                                         |
+| **on**    | Column name(s) to join on (string or list).                                                     |
+| **how**   | Join type (`'inner'`, `'outer'`, `'left'`, `'right'`, `'left_semi'`, `'left_anti'`, `'cross'`). |
+
+---
+
+## 🔹 Types of Joins
+
+| Join Type                    | Description                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------ |
+| **inner**                    | Returns matching rows from both DataFrames.                                          |
+| **outer** / **full**         | Returns all rows from both DataFrames, with nulls where no match.                    |
+| **left** / **left\_outer**   | All rows from left DataFrame + matching rows from right.                             |
+| **right** / **right\_outer** | All rows from right DataFrame + matching rows from left.                             |
+| **left\_semi**               | Returns only left DataFrame rows that have a match in the right DataFrame.           |
+| **left\_anti**               | Returns only left DataFrame rows that **don’t** have a match in the right DataFrame. |
+| **cross**                    | Cartesian product of rows.                                                           |
+
+---
+
+## 🔹 Example Dataset
+
 ```python
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"inner") \
-     .show(truncate=False)
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("JoinExample").getOrCreate()
+
+data1 = [(1, "Alice"), (2, "Bob"), (3, "Charlie")]
+data2 = [(1, "HR"), (2, "IT"), (4, "Finance")]
+
+df1 = spark.createDataFrame(data1, ["id", "name"])
+df2 = spark.createDataFrame(data2, ["id", "dept"])
 ```
-#### Full outer()
-* Outer a.k.a full, fullouter join returns all rows from both datasets, where join expression doesn’t match it returns null on respective record columns.
+
+---
+
+## 🔹 Example 1 — Inner Join
+
 ```python
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"outer") \
-    .show(truncate=False)
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"full") \
-    .show(truncate=False)
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"fullouter") \
-    .show(truncate=False)
+inner_df = df1.join(df2, on="id", how="inner")
+inner_df.show()
+```
+
+**Output**
 
 ```
-#### Left outer()
-* Left a.k.a Leftouter join returns all rows from the left dataset regardless of match found on the right dataset when join expression doesn’t match, it assigns null for that record and drops records from right where match not found.
-```python
- empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"left")
-    .show(truncate=False)
-  empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"leftouter")
-    .show(truncate=False)
++---+-----+---+
+| id| name|dept|
++---+-----+----+
+|  1|Alice|  HR|
+|  2|  Bob|  IT|
++---+-----+----+
 ```
-#### Right outer()
-* a.k.a Rightouter join is opposite of left join, here it returns all rows from the right dataset regardless of math found on the left dataset, when join expression doesn’t match, it assigns null for that record and drops records from left where match not found.
+
+---
+
+## 🔹 Example 2 — Left Join
+
 ```python
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"right") \
-   .show(truncate=False)
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"rightouter") \
-   .show(truncate=False)
+left_df = df1.join(df2, on="id", how="left")
+left_df.show()
 ```
-#### left semi()
-* leftsemi join is similar to inner join difference being leftsemi join returns all columns from the left dataset and ignores all columns from the right dataset. In other words, this join returns columns from the only left dataset for the records match in the right dataset on join expression, records not matched on join expression are ignored from both left and right datasets.
+
+**Output**
+
+```
++---+-------+------+
+| id|   name|  dept|
++---+-------+------+
+|  1|  Alice|    HR|
+|  2|    Bob|    IT|
+|  3|Charlie|  null|
++---+-------+------+
+```
+
+---
+
+## 🔹 Example 3 — Right Join
+
 ```python
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"leftsemi") \
-   .show(truncate=False)
+right_df = df1.join(df2, on="id", how="right")
+right_df.show()
 ```
-#### Left anti()
-* leftanti join does the exact opposite of the leftsemi, leftanti join returns only columns from the left dataset for non-matched records.
+
+**Output**
+
+```
++---+-------+-------+
+| id|   name|   dept|
++---+-------+-------+
+|  1|  Alice|     HR|
+|  2|    Bob|     IT|
+|  4|   null|Finance|
++---+-------+-------+
+```
+
+---
+
+## 🔹 Example 4 — Full Outer Join
+
 ```python
-empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"leftanti") \
-   .show(truncate=False)
+outer_df = df1.join(df2, on="id", how="outer")
+outer_df.show()
 ```
-#### self join()
-* Though there is no self-join type available, we can use any of the above-explained join types to join DataFrame to itself.
+
+**Output**
+
+```
++---+-------+-------+
+| id|   name|   dept|
++---+-------+-------+
+|  1|  Alice|     HR|
+|  2|    Bob|     IT|
+|  3|Charlie|   null|
+|  4|   null|Finance|
++---+-------+-------+
+```
+
+---
+
+## 🔹 Example 5 — Left Semi Join
+
 ```python
-empDF.alias("emp1").join(empDF.alias("emp2"), \
-    col("emp1.superior_emp_id") == col("emp2.emp_id"),"inner") \
-    .select(col("emp1.emp_id"),col("emp1.name"), \
-      col("emp2.emp_id").alias("superior_emp_id"), \
-      col("emp2.name").alias("superior_emp_name")) \
-   .show(truncate=False)
+semi_df = df1.join(df2, on="id", how="left_semi")
+semi_df.show()
 ```
+
+**Output**
+
+```
++---+-----+
+| id| name|
++---+-----+
+|  1|Alice|
+|  2|  Bob|
++---+-----+
+```
+
+---
+
+## 🔹 Example 6 — Left Anti Join
+
+```python
+anti_df = df1.join(df2, on="id", how="left_anti")
+anti_df.show()
+```
+
+**Output**
+
+```
++---+-------+
+| id|   name|
++---+-------+
+|  3|Charlie|
++---+-------+
+```
+
+---
+
+## 🔹 Example 7 — Cross Join
+
+```python
+cross_df = df1.crossJoin(df2)
+cross_df.show()
+```
+
+**Output** (Cartesian product)
+
+```
++---+-------+---+-------+
+| id|   name| id|   dept|
++---+-------+---+-------+
+|  1|  Alice|  1|     HR|
+|  1|  Alice|  2|     IT|
+|  1|  Alice|  4|Finance|
+|  2|    Bob|  1|     HR|
+|  2|    Bob|  2|     IT|
+|  2|    Bob|  4|Finance|
+|  3|Charlie|  1|     HR|
+| ... rows omitted ...
+```
+
+---
+
+## 🔹 Notes & Best Practices
+
+1. For **multiple join keys**, pass a list:
+
+   ```python
+   df1.join(df2, on=["id", "dept"], how="inner")
+   ```
+2. If column names differ, use:
+
+   ```python
+   df1.join(df2, df1.id == df2.emp_id, "inner")
+   ```
+3. Always filter unnecessary columns after join to avoid large DataFrames.
+4. Cross joins can be **very large** — use with caution.
+
+---
+
+✅ **Summary:**
+PySpark supports multiple join types similar to SQL, with flexible options for matching keys, handling nulls, and combining datasets.
+
