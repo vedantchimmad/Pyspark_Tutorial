@@ -1,82 +1,222 @@
-# filter and where
+# 🔍 PySpark: `filter()` vs `where()`
+
+In PySpark, `filter()` and `where()` are used to **filter rows from a DataFrame** based on a condition.  
+Both methods are **identical** in functionality and interchangeable.
 
 ---
-* `filter()` function is used to filter the rows from RDD/DataFrame based on the given condition or SQL expression,
+
+### 🧱 Sample DataFrame
+
 ```python
-# Create dataframe
-from pyspark.sql.types import StructType,StructField 
-from pyspark.sql.types import StringType, IntegerType, ArrayType
 data = [
-    (("James","","Smith"),["Java","Scala","C++"],"OH","M"),
-    (("Anna","Rose",""),["Spark","Java","C++"],"NY","F"),
-    (("Julia","","Williams"),["CSharp","VB"],"OH","F"),
-    (("Maria","Anne","Jones"),["CSharp","VB"],"NY","M"),
-    (("Jen","Mary","Brown"),["CSharp","VB"],"NY","M"),
-    (("Mike","Mary","Williams"),["Python","VB"],"OH","M")
- ]
-        
-schema = StructType([
-     StructField('name', StructType([
-        StructField('firstname', StringType(), True),
-        StructField('middlename', StringType(), True),
-         StructField('lastname', StringType(), True)
-     ])),
-     StructField('languages', ArrayType(StringType()), True),
-     StructField('state', StringType(), True),
-     StructField('gender', StringType(), True)
- ])
+    ("James", "Sales", 3000),
+    ("Michael", "HR", 4000),
+    ("Robert", "IT", 2500),
+    ("Maria", "IT", 3000)
+]
+columns = ["name", "dept", "salary"]
+df = spark.createDataFrame(data, columns)
+df.show()
+````
 
-df = spark.createDataFrame(data = data, schema = schema)
-df.printSchema()
-df.show(truncate=False)
-```
-#### filter with column condition
+---
+
+### ✅ 1. `filter()` – Filter rows using condition
+
 ```python
-# Using equals condition
-df.filter(df.state == "OH").show(truncate=False)
+# Salary > 3000
+df.filter(df.salary > 3000).show()
 
-# not equals condition
-df.filter(df.state != "OH").show(truncate=False) 
-df.filter(~(df.state == "OH")).show(truncate=False)
+# Multiple conditions
+df.filter((df.dept == "IT") & (df.salary >= 3000)).show()
 ```
-#### filter based on list value
+
+---
+
+### ✅ 2. `where()` – Same as `filter()`, SQL-style alias
+
 ```python
-#Filter IS IN List values
-li=["OH","CA","DE"]
-df.filter(df.state.isin(li)).show()
+# Same condition using where()
+df.where(df.salary > 3000).show()
 
-# Filter NOT IS IN List values
-#These show all records with NY (NY is not part of the list)
-df.filter(~df.state.isin(li)).show()
-df.filter(df.state.isin(li)==False).show()
+# With multiple conditions
+df.where((df.dept == "IT") & (df.salary >= 3000)).show()
 ```
-#### filter based on starts with,endeswith and contains
+
+---
+
+### ✅ 3. Using SQL expression (both methods support this)
+
 ```python
-# Using startswith
-df.filter(df.state.startswith("N")).show()
-
-#using endswith
-df.filter(df.state.endswith("H")).show()
-
-#contains
-df.filter(df.state.contains("H")).show()
+# Using SQL expression string
+df.filter("salary > 3000 AND dept = 'HR'").show()
+df.where("salary > 3000 AND dept = 'HR'").show()
 ```
-#### filter like and rlike
+
+---
+
+### 🧪 Output Example
+
+### Original DataFrame:
+
+```
++--------+-------+------+
+|    name|   dept|salary|
++--------+-------+------+
+|   James|  Sales|  3000|
+| Michael|     HR|  4000|
+|  Robert|     IT|  2500|
+|   Maria|     IT|  3000|
++--------+-------+------+
+```
+
+### Filtered (salary > 3000):
+
+```
++--------+-----+------+
+|    name|dept |salary|
++--------+-----+------+
+| Michael| HR  |  4000|
++--------+-----+------+
+```
+
+---
+
+### 📊 Comparison Table
+
+| Feature                | `filter()`     | `where()`                     |
+| ---------------------- | -------------- | ----------------------------- |
+| Functionality          | Filter rows    | Same as `filter()`            |
+| SQL expression support | ✅              | ✅                             |
+| Alias of               | Primary method | Alias of `filter()`           |
+| Preferred for SQL feel | ❌              | ✅ (for SQL-style readability) |
+
+---
+
+### ✅ Best Practice
+
+* Use `filter()` in general for clarity in API.
+* Use `where()` if you're writing SQL-like expressions or for better readability in mixed syntax scenarios.
+
+> ℹ️ They **compile to the same execution plan** internally.
+
+---
+## 🔎 PySpark Filter Examples: Different Ways to Filter Data
+
+Below are various examples of how you can use `filter()` / `where()` in PySpark to extract subsets of your data.
+
+---
+
+### 🧱 Sample DataFrame
+
 ```python
-data2 = [(2,"Michael Rose"),(3,"Robert Williams"),
-     (4,"Rames Rose"),(5,"Rames rose")
-  ]
-df2 = spark.createDataFrame(data = data2, schema = ["id","name"])
+data = [
+    ("James", "Sales", 3000),
+    ("Michael", "HR", 4000),
+    ("Robert", "IT", 2500),
+    ("Maria", "IT", 3000),
+    ("Jen", "Finance", 3900),
+    ("Jeff", None, None)
+]
+columns = ["name", "dept", "salary"]
+df = spark.createDataFrame(data, columns)
+df.show()
+````
 
-# like - SQL LIKE pattern
-df2.filter(df2.name.like("%rose%")).show()
+---
 
-# rlike - SQL RLIKE pattern (LIKE with Regex)
-#This check case insensitive
-df2.filter(df2.name.rlike("(?i)^*rose$")).show()
-```
-#### filter on array_column()
+### ✅ 1. Filter rows by numeric value
+
 ```python
-from pyspark.sql.functions import array_contains
-df.filter(array_contains(df.languages,"Java")) 
+df.filter(df.salary > 3000).show()
 ```
+
+---
+
+### ✅ 2. Filter rows by string value
+
+```python
+df.filter(df.dept == "IT").show()
+```
+
+---
+
+### ✅ 3. Filter with multiple conditions (AND, OR)
+
+```python
+from pyspark.sql.functions import col
+
+# AND condition
+df.filter((df.dept == "IT") & (df.salary >= 3000)).show()
+
+# OR condition
+df.filter((df.dept == "IT") | (df.salary >= 4000)).show()
+```
+
+---
+
+### ✅ 4. Filter using SQL expression string
+
+```python
+df.filter("dept = 'HR' AND salary > 3000").show()
+```
+
+---
+
+### ✅ 5. Filter rows with NULL and NOT NULL
+
+```python
+df.filter(df.salary.isNull()).show()
+df.filter(df.salary.isNotNull()).show()
+```
+
+---
+
+### ✅ 6. Filter rows with `isin()` (like SQL IN)
+
+```python
+df.filter(df.dept.isin("IT", "Finance")).show()
+```
+
+---
+
+### ✅ 7. Filter using `like()` (wildcard matching)
+
+```python
+df.filter(df.name.like("J%")).show()  # names starting with J
+```
+
+---
+
+### ✅ 8. Filter using `startswith()` and `endswith()`
+
+```python
+df.filter(df.name.startswith("M")).show()
+df.filter(df.name.endswith("a")).show()
+```
+
+---
+
+### ✅ 9. Filter using `between()`
+
+```python
+df.filter(df.salary.between(2500, 3500)).show()
+```
+
+---
+
+### ✅ 10. Negation using `~` (NOT condition)
+
+```python
+df.filter(~df.dept.isin("HR", "Finance")).show()
+```
+
+---
+
+### 📝 Best Practice
+
+* Use **column expressions** (`col("salary") > 3000`) for flexibility.
+* Combine with `select()` to limit columns returned.
+* SQL expression strings are good for quick filters but less safe than column APIs (prone to typos and less IDE-friendly).
+
+
