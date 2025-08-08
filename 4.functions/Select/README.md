@@ -1,48 +1,92 @@
-# select
+# 📌 PySpark `select()` Function
 
 ---
-* `select()` function is used to select single, multiple, column by index, all columns from the list and the nested columns from a DataFrame.
-* PySpark select() is a transformation function hence it returns a new DataFrame with the selected columns.
+
+## 🔹 Overview
+In PySpark, the **`select()`** function is used to project (choose) specific columns or perform expressions on columns in a **DataFrame**.  
+It is similar to the **SELECT** statement in SQL.
+
+---
+
+## 🔹 Syntax
 ```python
-import pyspark
+DataFrame.select(*cols)
+````
+
+| Parameter | Description                                                        |
+| --------- | ------------------------------------------------------------------ |
+| **cols**  | Column names (as strings) or `Column` expressions using functions. |
+
+---
+
+## 🔹 Example 1 — Selecting Specific Columns
+
+```python
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
-data = [("James","Smith","USA","CA"),
-    ("Michael","Rose","USA","NY"),
-    ("Robert","Williams","USA","CA"),
-    ("Maria","Jones","USA","FL")
-  ]
-columns = ["firstname","lastname","country","state"]
-df = spark.createDataFrame(data = data, schema = columns)
-df.show(truncate=False)
+spark = SparkSession.builder.appName("SelectExample").getOrCreate()
+
+data = [("Alice", 25, "HR"), ("Bob", 30, "IT"), ("Cathy", 28, "Finance")]
+columns = ["Name", "Age", "Dept"]
+
+df = spark.createDataFrame(data, columns)
+
+# Select specific columns
+df.select("Name", "Age").show()
 ```
-#### Select single and multiple column 
+
+**Output**
+
+```
++-----+---+
+| Name|Age|
++-----+---+
+|Alice| 25|
+|  Bob| 30|
+|Cathy| 28|
++-----+---+
+```
+
+---
+
+## 🔹 Example 2 — Selecting with Column Expressions
+
 ```python
-df.select("firstname","lastname").show()
-df.select(df.firstname,df.lastname).show()
-df.select(df["firstname"],df["lastname"]).show()
+from pyspark.sql.functions import col, upper
 
-#By using col() function
-from pyspark.sql.functions import col
-df.select(col("firstname"),col("lastname")).show()
+# Select with expressions
+df.select(col("Name"), (col("Age") + 5).alias("Age_plus_5")).show()
+
+# Using built-in functions
+df.select(upper(col("Dept")).alias("Department_Upper")).show()
 ```
-#### Select all column form a list
+
+---
+
+## 🔹 Example 3 — Using SQL Query Style
 
 ```python
-# Select All columns from List
-df.select(*columns).show()
-
-# Select All columns
-df.select([col for col in df.columns]).show()
-df.select("*").show()
+df.createOrReplaceTempView("employees")
+spark.sql("SELECT Name, Age FROM employees").show()
 ```
 
-#### Select column by index
-```python
-#Selects first 3 columns and top 3 rows
-df.select(df.columns[:3]).show(3)
+---
 
-#Selects columns 2 to 4  and top 3 rows
-df.select(df.columns[2:4]).show(3)
-```
+## 🔹 Key Points
+
+| Feature                     | Description                                    |
+| --------------------------- | ---------------------------------------------- |
+| **Select by column name**   | `df.select("col1", "col2")`                    |
+| **Select using `col()`**    | `df.select(col("col1"))`                       |
+| **Select with expressions** | `df.select((col("col1")+10).alias("newCol"))`  |
+| **Select all columns**      | `df.select("*")`                               |
+| **SQL style**               | Using `spark.sql()` after creating a temp view |
+
+---
+
+✅ **Summary:**
+
+* `select()` is **column projection**.
+* Supports both **direct column names** and **expressions**.
+* Can be combined with **PySpark functions** for transformations.
+
