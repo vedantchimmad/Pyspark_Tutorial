@@ -1,53 +1,144 @@
-# Transform
+# 📌 PySpark `transform()` Function
 
 ---
-* PySpark provides two `transform()` functions one with DataFrame and another in pyspark.sql.functions.
+
+## 🔹 Overview
+The **`transform()`** function in PySpark is a **higher-order function** available for both  
+**DataFrames** and **RDDs**.  
+It allows you to **apply custom transformations** to a DataFrame in a **chainable** and **readable** way.
+
+💡 Think of it like **`pipe()`** in Pandas or function composition —  
+you pass a function that takes a DataFrame and returns a modified DataFrame.
+
+---
+
+## 🔹 Syntax
 ```python
-# Imports
+DataFrame.transform(func)
+````
+
+| Parameter | Description                                                                       |
+| --------- | --------------------------------------------------------------------------------- |
+| **func**  | A function that accepts a DataFrame as input and returns a transformed DataFrame. |
+
+**Returns:** New transformed DataFrame.
+
+---
+
+## 🔹 Why Use `transform()`?
+
+* **Improves readability** when applying multiple transformations.
+* **Keeps code DRY** (Don't Repeat Yourself) by reusing transformation functions.
+* **Chainable** with other DataFrame methods.
+* Useful in **function-based pipelines**.
+
+---
+
+## 🔹 Example 1 — Basic Usage
+
+```python
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 
-# Create SparkSession
-spark = SparkSession.builder \
-            .appName('SparkByExamples.com') \
-            .getOrCreate()
+spark = SparkSession.builder.appName("TransformExample").getOrCreate()
 
-# Prepare Data
-simpleData = (("Java",4000,5), \
-    ("Python", 4600,10),  \
-    ("Scala", 4100,15),   \
-    ("Scala", 4500,15),   \
-    ("PHP", 3000,20),  \
-  )
-columns= ["CourseName", "fee", "discount"]
+data = [("Alice", 25), ("Bob", 30), ("Cathy", 28)]
+columns = ["Name", "Age"]
 
-# Create DataFrame
-df = spark.createDataFrame(data = simpleData, schema = columns)
-df.printSchema()
-df.show(truncate=False)
+df = spark.createDataFrame(data, columns)
+
+# Define a transformation function
+def add_age_group(df):
+    return df.withColumn("AgeGroup", 
+                         (col("Age") / 10).cast("int") * 10)
+
+# Apply using transform
+df_transformed = df.transform(add_age_group)
+
+df_transformed.show()
 ```
->[ Syntax ]
->
->DataFrame.transform(func: Callable[[…], DataFrame], *args: Any, **kwargs: Any) → pyspark.sql.dataframe.DataFrame
 
-#### Create custom function
+**Output**
+
+```
++-----+---+--------+
+| Name|Age|AgeGroup|
++-----+---+--------+
+|Alice| 25|      20|
+|  Bob| 30|      30|
+|Cathy| 28|      20|
++-----+---+--------+
+```
+
+---
+
+## 🔹 Example 2 — Chaining with Multiple Transforms
+
 ```python
 from pyspark.sql.functions import upper
-def to_upper_str_columns(df):
-    return df.withColumn("CourseName",upper(df.CourseName))
 
-# Custom transformation 2
-def reduce_price(df,reduceBy):
-    return df.withColumn("new_fee",df.fee - reduceBy)
+def to_uppercase(df):
+    return df.withColumn("Name", upper(col("Name")))
 
-# Custom transformation 3
-def apply_discount(df):
-    return df.withColumn("discounted_fee",  \
-             df.new_fee - (df.new_fee * df.discount) / 100)
+def filter_age(df):
+    return df.filter(col("Age") > 25)
+
+df_final = (
+    df
+    .transform(to_uppercase)
+    .transform(filter_age)
+    .transform(add_age_group)
+)
+
+df_final.show()
 ```
-### Apply dataframe.transform()
+
+**Output**
+
+```
++----+---+--------+
+|Name|Age|AgeGroup|
++----+---+--------+
+| BOB| 30|      30|
+|CATHY|28|      20|
++----+---+--------+
+```
+
+---
+
+## 🔹 Example 3 — Inline Lambda
+
 ```python
-# PySpark transform() Usage
-df2 = df.transform(to_upper_str_columns) \
-        .transform(reduce_price,1000) \
-        .transform(apply_discount)
+df_lambda = df.transform(lambda d: d.withColumn("DoubleAge", col("Age") * 2))
+df_lambda.show()
 ```
+
+**Output**
+
+```
++-----+---+---------+
+| Name|Age|DoubleAge|
++-----+---+---------+
+|Alice| 25|       50|
+|  Bob| 30|       60|
+|Cathy| 28|       56|
++-----+---+---------+
+```
+
+---
+
+## 🔹 Key Points
+
+| Feature                | Description                                           |
+| ---------------------- | ----------------------------------------------------- |
+| **Functional style**   | Pass a function that returns a DataFrame              |
+| **Readable pipelines** | Chain multiple transformations                        |
+| **Reusable**           | Write once, use everywhere                            |
+| **Immutable**          | Returns a new DataFrame without changing the original |
+
+---
+
+✅ **Summary:**
+`transform()` in PySpark is great for **clean, reusable, and readable transformation pipelines**.
+It doesn't modify the DataFrame in place — it returns a new one that can be chained with more operations.
+
