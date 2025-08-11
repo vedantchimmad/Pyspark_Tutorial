@@ -1,77 +1,132 @@
-# MapType
+# 🗺️ `MapType` in PySpark
 
 ---
-* PySpark MapType (also called map type) is a data type to represent Python Dictionary (dict) to store key-value pair, 
-* PySpark SQL function create_map() is used to convert selected DataFrame columns to MapType,
-*  create_map() takes a list of columns you wanted to convert as an argument and returns a MapType column.
+
+## 📝 Overview
+`MapType` is a **data type** in PySpark used to represent **key-value pairs** in a DataFrame column.  
+It is part of the `pyspark.sql.types` module and is useful when you need to store **dictionary-like structures** inside a single column.
+
+**Import Path**
+```python
+from pyspark.sql.types import MapType, StringType, IntegerType
+````
+
+---
+
+## 🛠 Syntax
+
+```python
+MapType(keyType, valueType, valueContainsNull=True)
+```
+
+| Parameter           | Description                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `keyType`           | **Required**. Data type of keys (e.g., `StringType()`).                                         |
+| `valueType`         | **Required**. Data type of values (e.g., `IntegerType()`).                                      |
+| `valueContainsNull` | **Optional**. Boolean flag indicating whether map values can contain `null`. Default is `True`. |
+
+**Return Type:**
+`MapType` object (used inside a DataFrame schema).
+
+---
+
+## 🎯 Example 1: Creating a DataFrame with `MapType`
+
 ```python
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType,StructField, StringType, IntegerType
+from pyspark.sql.types import StructType, StructField, MapType, StringType, IntegerType
 
-spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
-data = [ ("36636","Finance",3000,"USA"), 
-    ("40288","Finance",5000,"IND"), 
-    ("42114","Sales",3900,"USA"), 
-    ("39192","Marketing",2500,"CAN"), 
-    ("34534","Sales",6500,"USA") ]
+spark = SparkSession.builder.appName("MapTypeExample").getOrCreate()
+
 schema = StructType([
-     StructField('id', StringType(), True),
-     StructField('dept', StringType(), True),
-     StructField('salary', IntegerType(), True),
-     StructField('location', StringType(), True)
-     ])
-
-df = spark.createDataFrame(data=data,schema=schema)
-df.printSchema()
-df.show(truncate=False)
-
-from pyspark.sql.functions import col,lit,create_map
-df = df.withColumn("propertiesMap",create_map(
-    lit("salary"),col("salary"),
-    lit("location"),col("location")
-)).drop("salary","location")
-df.printSchema()
-df.show(truncate=False)
-```
-#### Create MapType From StructType
-```python
-from pyspark.sql.types import StructField, StructType, StringType, MapType
-schema = StructType([
-    StructField('name', StringType(), True),
-    StructField('properties', MapType(StringType(),StringType()),True)
+    StructField("name", StringType(), True),
+    StructField("properties", MapType(StringType(), StringType()), True)
 ])
 
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
-dataDictionary = [
-    ('James',{'hair':'black','eye':'brown'}),
-    ('Michael',{'hair':'brown','eye':None}),
-    ('Robert',{'hair':'red','eye':'black'}),
-    ('Washington',{'hair':'grey','eye':'grey'}),
-    ('Jefferson',{'hair':'brown','eye':''})
+data = [
+    ("Alice", {"hair": "brown", "eye": "blue"}),
+    ("Bob", {"hair": "black", "eye": "green"})
 ]
-df = spark.createDataFrame(data=dataDictionary, schema = schema)
-df.printSchema()
+
+df = spark.createDataFrame(data, schema)
 df.show(truncate=False)
-
-
-df.withColumn("hair",df.properties.getItem("hair"))
-    .withColumn("eye",df.properties.getItem("eye"))
-    .drop("properties")
-    .show()
-
-df.withColumn("hair",df.properties["hair"])
-    .withColumn("eye",df.properties["eye"])
-    .drop("properties")
-    .show()
 ```
-#### map_keys() – Get All Map Keys
+
+**Output:**
+
+```
++-----+------------------------------+
+|name |properties                    |
++-----+------------------------------+
+|Alice|{hair -> brown, eye -> blue}   |
+|Bob  |{hair -> black, eye -> green}  |
++-----+------------------------------+
+```
+
+---
+
+## 🎯 Example 2: Accessing Map Values
+
 ```python
-from pyspark.sql.functions import map_keys
-df.select(df.name,map_keys(df.properties)).show()
+from pyspark.sql import functions as F
+
+df.select(
+    "name",
+    F.col("properties").getItem("hair").alias("hair_color")
+).show()
 ```
-#### map_values() – Get All map Values
+
+**Output:**
+
+```
++-----+----------+
+|name |hair_color|
++-----+----------+
+|Alice|brown     |
+|Bob  |black     |
++-----+----------+
+```
+
+---
+
+## 🎯 Example 3: Creating a Map Column Dynamically
+
 ```python
-from pyspark.sql.functions import map_values
-df.select(df.name,map_values(df.properties)).show()
+df2 = df.withColumn(
+    "skills_map",
+    F.create_map(F.lit("Python"), F.lit(5), F.lit("Java"), F.lit(4))
+)
+
+df2.show(truncate=False)
 ```
+
+**Output:**
+
+```
++-----+------------------------------+-------------------------+
+|name |properties                    |skills_map               |
++-----+------------------------------+-------------------------+
+|Alice|{hair -> brown, eye -> blue}   |{Python -> 5, Java -> 4} |
+|Bob  |{hair -> black, eye -> green}  |{Python -> 5, Java -> 4} |
++-----+------------------------------+-------------------------+
+```
+
+---
+
+## 🖼 Visual Representation
+
+| **Name** | **Properties (Map)**      |
+| -------- | ------------------------- |
+| Alice    | hair → brown, eye → blue  |
+| Bob      | hair → black, eye → green |
+
+---
+
+## 🔍 Key Points
+
+* **Keys must be unique** in a `MapType`.
+* Can **nest** `MapType` inside other complex types like `ArrayType` or `StructType`.
+* Useful for **flexible key-value storage** without defining fixed column names.
+* Works seamlessly with **Spark SQL functions** like `getItem`, `map_keys`, `map_values`, `create_map`.
+
+---
