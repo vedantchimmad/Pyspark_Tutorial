@@ -1,67 +1,139 @@
-# Expr
+# 🧮 `expr` in PySpark
 
 ---
-* `expr()` function takes SQL expression as a string argument, executes the expression, and returns a PySpark Column type.
-#### Concatenate Columns using || (similar to SQL)
-using || to concatenate values from two string columns, you can use expr() expression to do exactly same.
-```python
-#Concatenate columns using || (sql like)
-data=[("James","Bond"),("Scott","Varsa")] 
-df=spark.createDataFrame(data).toDF("col1","col2") 
-df.withColumn("Name",expr(" col1 ||','|| col2")).show()
-```
-#### Using SQL CASE WHEN with expr()
-```python
-from pyspark.sql.functions import expr
-data = [("James","M"),("Michael","F"),("Jen","")]
-columns = ["name","gender"]
-df = spark.createDataFrame(data = data, schema = columns)
 
-#Using CASE WHEN similar to SQL.
-from pyspark.sql.functions import expr
-df2=df.withColumn("gender", expr("CASE WHEN gender = 'M' THEN 'Male' " +
-           "WHEN gender = 'F' THEN 'Female' ELSE 'unknown' END"))
-df2.show()
-```
-#### Using an Existing Column Value for Expression
-```python
-from pyspark.sql.functions import expr
-data=[("2019-01-23",1),("2019-06-24",2),("2019-09-20",3)] 
-df=spark.createDataFrame(data).toDF("date","increment") 
+## 📝 Overview
+The `expr` function allows you to **use SQL expressions directly inside PySpark code**.  
+It is handy when you want to write transformations in **SQL syntax** while still working in the DataFrame API.
 
-#Add Month value from another column
-df.select(df.date,df.increment,
-     expr("add_months(date,increment)")
-  .alias("inc_date")).show()
-```
->[!Note]
-> 
->that Importing SQL functions are not required when using them with expr(). You see above add_months() is used without importing.
-#### Giving Column Alias along with expr()
+**Import Path**
 ```python
-from pyspark.sql.functions import expr
-df.select(df.date,df.increment,
-     expr("""add_months(date,increment) as inc_date""")
-  ).show()
-```
-#### cast Function with expr()
+from pyspark.sql import functions as F
+````
+
+---
+
+## 🛠 Syntax
+
 ```python
-# Using Cast() Function
-df.select("increment",expr("cast(increment as string) as str_increment")) \
-  .printSchema()
+expr(sql_expression)
 ```
-#### Arithmetic operations
+
+| Parameter        | Description                                               |
+| ---------------- | --------------------------------------------------------- |
+| `sql_expression` | **Required**. A string containing a valid SQL expression. |
+
+**Return Type:**
+Depends on the SQL expression output.
+
+---
+
+## 🎯 Example 1: Simple Column Arithmetic
+
 ```python
-# Arthemetic operations
-df.select(df.date,df.increment,
-     expr("increment + 5 as new_increment")
-  ).show()
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+
+spark = SparkSession.builder.appName("ExprExample").getOrCreate()
+
+data = [(1, 10), (2, 20), (3, 30)]
+df = spark.createDataFrame(data, ["id", "value"])
+
+# Using expr to calculate new column
+result = df.withColumn("double_value", F.expr("value * 2"))
+
+result.show()
 ```
-#### Using Filter with expr()
+
+**Output:**
+
+```
++---+-----+------------+
+|id |value|double_value|
++---+-----+------------+
+|1  |10   |20          |
+|2  |20   |40          |
+|3  |30   |60          |
++---+-----+------------+
+```
+
+---
+
+## 🎯 Example 2: Using SQL Functions
+
 ```python
-#Use expr()  to filter the rows
-from pyspark.sql.functions import expr
-data=[(100,2),(200,3000),(500,500)] 
-df=spark.createDataFrame(data).toDF("col1","col2") 
-df.filter(expr("col1 == col2")).show()
+data = [("2025-08-11",), ("2025-01-01",)]
+df = spark.createDataFrame(data, ["date_str"])
+
+result = df.withColumn("month_name", F.expr("date_format(date_str, 'MMMM')"))
+
+result.show()
 ```
+
+**Output:**
+
+```
++----------+-----------+
+|date_str  |month_name |
++----------+-----------+
+|2025-08-11|August     |
+|2025-01-01|January    |
++----------+-----------+
+```
+
+---
+
+## 🎯 Example 3: Conditional Logic
+
+```python
+data = [(100,), (250,), (400,)]
+df = spark.createDataFrame(data, ["sales"])
+
+result = df.withColumn(
+    "category",
+    F.expr("CASE WHEN sales < 200 THEN 'Low' " +
+           "WHEN sales < 350 THEN 'Medium' " +
+           "ELSE 'High' END")
+)
+
+result.show()
+```
+
+**Output:**
+
+```
++-----+--------+
+|sales|category|
++-----+--------+
+|100  |Low     |
+|250  |Medium  |
+|400  |High    |
++-----+--------+
+```
+
+---
+
+## 🖼 Visual Representation
+
+**Without `expr`:**
+
+```python
+df.withColumn("double_value", df["value"] * 2)
+```
+
+**With `expr`:**
+
+```python
+df.withColumn("double_value", F.expr("value * 2"))
+```
+
+---
+
+## 🔍 Key Points
+
+* `expr` is useful for **quick SQL-style expressions** without switching to full SQL queries.
+* Supports **all Spark SQL functions** (like `date_format`, `concat_ws`, `CASE WHEN`, etc.).
+* Can be combined with column references and literals.
+
+---
+
