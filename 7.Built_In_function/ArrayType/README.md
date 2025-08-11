@@ -1,51 +1,109 @@
-# ArrayType
-
+# ArrayType in PySpark
 
 ---
-* PySpark ArrayType is a collection data type that extends the DataType class which is a superclass of all types in PySpark.
+
+## 📌 Overview
+In **PySpark**, `ArrayType` is a **data type** from `pyspark.sql.types` used to define **columns containing arrays**.  
+It allows you to store multiple values in a single column while maintaining schema support for Spark SQL.
+
+**Import Path**
 ```python
+from pyspark.sql.types import ArrayType, StringType, IntegerType
+````
+
+---
+
+## 🛠 Syntax
+
+```python
+ArrayType(elementType, containsNull=True)
+```
+
+| Parameter      | Type     | Description                                                                    |
+| -------------- | -------- | ------------------------------------------------------------------------------ |
+| `elementType`  | DataType | The type of elements in the array (e.g., `StringType()`, `IntegerType()` etc.) |
+| `containsNull` | Boolean  | Whether the array can contain null values. Default is `True`                   |
+
+---
+
+## 🎯 Example with DataFrame
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, ArrayType, StringType
+
+# Create SparkSession
+spark = SparkSession.builder.appName("ArrayTypeExample").getOrCreate()
+
+# Schema with ArrayType
+schema = StructType([
+    StructField("name", StringType(), True),
+    StructField("hobbies", ArrayType(StringType()), True)
+])
+
+# Data
 data = [
- ("James,,Smith",["Java","Scala","C++"],["Spark","Java"],"OH","CA"),
- ("Michael,Rose,",["Spark","Java","C++"],["Spark","Java"],"NY","NJ"),
- ("Robert,,Williams",["CSharp","VB"],["Spark","Python"],"UT","NV")
+    ("Alice", ["Reading", "Traveling"]),
+    ("Bob", ["Swimming", "Gaming"]),
+    ("Charlie", ["Hiking", "Photography"])
 ]
 
-from pyspark.sql.types import StringType, ArrayType,StructType,StructField
-schema = StructType([ 
-    StructField("name",StringType(),True), 
-    StructField("languagesAtSchool",ArrayType(StringType()),True), 
-    StructField("languagesAtWork",ArrayType(StringType()),True), 
-    StructField("currentState", StringType(), True), 
-    StructField("previousState", StringType(), True)
-  ])
+# Create DataFrame
+df = spark.createDataFrame(data, schema)
+df.show(truncate=False)
+```
 
-df = spark.createDataFrame(data=data,schema=schema)
-df.printSchema()
-df.show()
+**Output:**
+
 ```
-## ArrayType (Array) Functions
-### explode()
-Use explode() function to create a new row for each element in the given array column.
-```python
-from pyspark.sql.functions import explode
-df.select(df.name,explode(df.languagesAtSchool)).show()
++-------+----------------------+
+|name   |hobbies               |
++-------+----------------------+
+|Alice  |[Reading, Traveling]  |
+|Bob    |[Swimming, Gaming]    |
+|Charlie|[Hiking, Photography] |
++-------+----------------------+
 ```
-### Split()
-split() sql function returns an array type after splitting the string column by delimiter.
-```python
-from pyspark.sql.functions import split
-df.select(split(df.name,",").alias("nameAsArray")).show()
+
+---
+
+## 🔹 Operations on ArrayType Column
+
+| Function           | Description                              | Example                                                      |
+| ------------------ | ---------------------------------------- | ------------------------------------------------------------ |
+| `size()`           | Returns the length of the array          | `df.select(size("hobbies")).show()`                          |
+| `array_contains()` | Checks if array contains a value         | `df.filter(array_contains("hobbies", "Reading")).show()`     |
+| `explode()`        | Creates a new row for each array element | `df.select(explode("hobbies")).show()`                       |
+| `concat()`         | Merges multiple array columns            | `df.select(concat("hobbies", array(lit("Cooking")))).show()` |
+
+---
+
+## 🖼 Design Representation
+
 ```
-### array()
-Use array() function to create a new array column by merging the data from multiple columns.
-```python
-from pyspark.sql.functions import array
-df.select(df.name,array(df.currentState,df.previousState).alias("States")).show()
++---------+-----------------------------------+
+| name    | hobbies                           |
++---------+-----------------------------------+
+| Alice   | ["Reading", "Traveling"]          |
+| Bob     | ["Swimming", "Gaming"]            |
+| Charlie | ["Hiking", "Photography"]         |
++---------+-----------------------------------+
+
+ArrayType: ─────────────────────────────┐
+                                         ↓
+[ Element1, Element2, Element3, ... ] → Same DataType Elements
 ```
-### array_contains
-array_contains() sql function is used to check if array column contains a value.
-```python
-from pyspark.sql.functions import array_contains
-df.select(df.name,array_contains(df.languagesAtSchool,"Java")
-    .alias("array_contains")).show()
+
+---
+
+## 🔗 Notes
+
+* `ArrayType` is **nullable by default**, but you can restrict nulls.
+* Can be used with **UDFs** for advanced array manipulation.
+* Supports SQL-style queries with array functions.
+
+```
+SQL Example:
+SELECT name, size(hobbies) as hobby_count
+FROM people
 ```
