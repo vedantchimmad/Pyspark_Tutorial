@@ -1,167 +1,192 @@
-# Date and Timestamp
+# 📅 Date & ⏱ Timestamp Functions in PySpark
 
 ---
-* Most of all these functions accept input as, Date type, Timestamp type, or String. If a String used, it should be in a default format that can be cast to date.
-* DateType default format is yyyy-MM-dd
-* TimestampType default format is yyyy-MM-dd HH:mm:ss.SSSS
-* Returns null if the input is a string that can not be cast to Date or Timestamp.
-## PySpark SQL Date Functions
-* The default format of the PySpark Date is yyyy-MM-dd.
 
- | PYSPARK DATE FUNCTION                           | 	DATE FUNCTION DESCRIPTION                                                                                                                                                                                                                                                                                                                                 |
-  |-------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-  | current_date()	                                 | Returns the current date as a date column.                                                                                                                                                                                                                                                                                                                 |
-  | date_format(dateExpr,format)                    | 	Converts a date/timestamp/string to a value of string in the format specified by the date format given by the second argument.                                                                                                                                                                                                                            |
-  | to_date()	                                      | Converts the column into `DateType` by casting rules to `DateType`.                                                                                                                                                                                                                                                                                        |
- | to_date(column, fmt)	                           | Converts the column into a `DateType` with a specified format                                                                                                                                                                                                                                                                                              |
-  | add_months(Column, numMonths)                   | 	Returns the date that is `numMonths` after `startDate`.                                                                                                                                                                                                                                                                                                   |
-  | date_add(column, days),date_sub(column, days)   | 	Returns the date that is `days` days after `start`                                                                                                                                                                                                                                                                                                        |
-  | datediff(end, start)                            | 	Returns the number of days from `start` to `end`.                                                                                                                                                                                                                                                                                                         |
-  | months_between(end, start)                      | 	Returns number of months between dates `start` and `end`. A whole number is returned if both inputs have the same day of month or both are the last day of their respective months. Otherwise, the difference is calculated assuming 31 days per month.                                                                                                   |
- | months_between(end, start, roundOff)	           | Returns number of months between dates `end` and `start`. If `roundOff` is set to true, the result is rounded off to 8 digits; it is not rounded otherwise.                                                                                                                                                                                                |
-  | next_day(column, dayOfWeek)	                    | Returns the first date which is later than the value of the `date` column that is on the specified day of the week.For example, `next_day(‘2015-07-27’, “Sunday”)` returns 2015-08-02 because that is the first Sunday after 2015-07-27.                                                                                                                   |
-  | trunc(column, format)	                          | Returns date truncated to the unit specified by the format.For example, `trunc(“2018-11-19 12:01:19”, “year”)` returns 2018-01-01 format: ‘year’, ‘yyyy’, ‘yy’ to truncate by year,‘month’, ‘mon’, ‘mm’ to truncate by month                                                                                                                               |
-  | date_trunc(format, timestamp)                   | 	Returns timestamp truncated to the unit specified by the format.For example, `date_trunc(“year”, “2018-11-19 12:01:19”)` returns 2018-01-01 00:00:00 format: ‘year’, ‘yyyy’, ‘yy’ to truncate by year,‘month’, ‘mon’, ‘mm’ to truncate by month,‘day’, ‘dd’ to truncate by day, Other options are: ‘second’, ‘minute’, ‘hour’, ‘week’, ‘month’, ‘quarter’ |
-  | year(column)	                                   | Extracts the year as an integer from a given date/timestamp/string                                                                                                                                                                                                                                                                                         |
-  | quarter(column)                                 | 	Extracts the quarter as an integer from a given date/timestamp/string.                                                                                                                                                                                                                                                                                    |
-  | month(column)	                                  | Extracts the month as an integer from a given date/timestamp/string                                                                                                                                                                                                                                                                                        |
- | dayofweek(column)	                              | Extracts the day of the week as an integer from a given date/timestamp/string. Ranges from 1 for a Sunday through to 7 for a Saturday                                                                                                                                                                                                                      |
-  | dayofmonth(column)	                             | Extracts the day of the month as an integer from a given date/timestamp/string.                                                                                                                                                                                                                                                                            |
-  | dayofyear(column)	                              | Extracts the day of the year as an integer from a given date/timestamp/string.                                                                                                                                                                                                                                                                             |
- | weekofyear(column)                              | 	Extracts the week number as an integer from a given date/timestamp/string. A week is considered to start on a Monday and week 1 is the first week with more than 3 days, as defined by ISO 8601                                                                                                                                                           |
- | last_day(column)	                               | Returns the last day of the month which the given date belongs to. For example, input “2015-07-27” returns “2015-07-31” since July 31 is the last day of the month in July 2015.                                                                                                                                                                           |
- | from_unixtime(column)	                          | Converts the number of seconds from unix epoch (1970-01-01 00:00:00 UTC) to a string representing the timestamp of that moment in the current system time zone in the yyyy-MM-dd HH:mm:ss format.                                                                                                                                                          |
-| from_unixtime(column, f)                        | 	Converts the number of seconds from unix epoch (1970-01-01 00:00:00 UTC) to a string representing the timestamp of that moment in the current system time zone in the given format.                                                                                                                                                                       |
- | unix_timestamp()                                | 	Returns the current Unix timestamp (in seconds) as a long                                                                                                                                                                                                                                                                                                 |
- | unix_timestamp(column)                          | 	Converts time string in format yyyy-MM-dd HH:mm:ss to Unix timestamp (in seconds), using the default timezone and the default locale.                                                                                                                                                                                                                     |
- | unix_timestamp(column, p)                       | 	Converts time string with given pattern to Unix timestamp (in seconds).                                                                                                                                                                                                                                                                                   |
+PySpark provides built-in functions to work with **dates** and **timestamps** for extraction, formatting, and manipulation.
+
+---
+
+## 🛠 **Import**
 ```python
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
+from pyspark.sql import functions as F
 
-# Create SparkSession
-spark = SparkSession.builder \
-            .appName('SparkByExamples.com') \
-            .getOrCreate()
-data=[["1","2020-02-01"],["2","2019-03-01"],["3","2021-03-01"]]
-df=spark.createDataFrame(data,["id","input"])
-df.show()
-```
-#### current_date()
-* Use current_date() to get the current system date. 
-* By default, the data will be returned in yyyy-dd-mm format.
-```python
-#current_date()
-df.select(current_date().alias("current_date")
-  ).show(1)
-```
-#### date_format()
-* The below example uses date_format() to parses the date and converts from yyyy-dd-mm to MM-dd-yyyy format.
-```python
-#date_format()
-df.select(col("input"), 
-    date_format(col("input"), "MM-dd-yyyy").alias("date_format") 
-  ).show()
-```
-#### to_date()
-* Below example converts string in date format yyyy-MM-dd to a DateType yyyy-MM-dd using to_date().
-```python
-#to_date()
-df.select(col("input"), 
-    to_date(col("input"), "yyy-MM-dd").alias("to_date") 
-  ).show()
-```
-#### datediff()
-* The below example returns the difference between two dates using datediff().
-```python
-#datediff()
-df.select(col("input"), 
-    datediff(current_date(),col("input")).alias("datediff")  
-  ).show()
-```
-#### months_between()
-The below example returns the months between two dates using months_between().
-```python
-#months_between()
-df.select(col("input"), 
-    months_between(current_date(),col("input")).alias("months_between")  
-  ).show()
-```
-#### trunc()
-The below example truncates the date at a specified unit using trunc().
-```python
-#trunc()
-df.select(col("input"), 
-    trunc(col("input"),"Month").alias("Month_Trunc"), 
-    trunc(col("input"),"Year").alias("Month_Year"), 
-    trunc(col("input"),"Month").alias("Month_Trunc")
-   ).show()
-```
-#### add_months() , date_add(), date_sub()
-```python
-#add_months() , date_add(), date_sub()
-df.select(col("input"), 
-    add_months(col("input"),3).alias("add_months"), 
-    add_months(col("input"),-3).alias("sub_months"), 
-    date_add(col("input"),4).alias("date_add"), 
-    date_sub(col("input"),4).alias("date_sub") 
-  ).show()
-```
-#### year(), month(), month(),next_day(), weekofyear()
-```python
-df.select(col("input"), 
-     year(col("input")).alias("year"), 
-     month(col("input")).alias("month"), 
-     next_day(col("input"),"Sunday").alias("next_day"), 
-     weekofyear(col("input")).alias("weekofyear") 
-  ).show()
-```
-#### dayofweek(), dayofmonth(), dayofyear()
-```python
-df.select(col("input"),  
-     dayofweek(col("input")).alias("dayofweek"), 
-     dayofmonth(col("input")).alias("dayofmonth"), 
-     dayofyear(col("input")).alias("dayofyear"), 
-  ).show()
-```
-## Timestamp Functions
+spark = SparkSession.builder.appName("Date & Timestamp").getOrCreate()
+````
 
-| PYSPARK TIMESTAMP FUNCTION SIGNATURE	 | TIMESTAMP FUNCTION DESCRIPTION                                          |
-|---------------------------------------|-------------------------------------------------------------------------|
-| current_timestamp ()	                 | Returns the current timestamp as a timestamp column                     |
-| hour(column)	                         | Extracts the hours as an integer from a given date/timestamp/string.    |
-| minute(column)                        | 	Extracts the minutes as an integer from a given date/timestamp/string. |
-| second(column)                        | 	Extracts the seconds as an integer from a given date/timestamp/string. |
-| to_timestamp(column)                  | 	Converts to a timestamp by casting rules to `TimestampType`.           |
-| to_timestamp(column, fmt)             | 	Converts time string with the given pattern to timestamp               |
-#### current_timestamp()
-```python
-data=[["1","02-01-2020 11 01 19 06"],["2","03-01-2019 12 01 19 406"],["3","03-01-2021 12 01 19 406"]]
-df2=spark.createDataFrame(data,["id","input"])
-df2.show(truncate=False)
-```
-```python
-#current_timestamp()
-df2.select(current_timestamp().alias("current_timestamp")
-  ).show(1,truncate=False)
-```
-#### to_timestamp()
-* Converts string timestamp to Timestamp type format.
-```python
-#to_timestamp()
-df2.select(col("input"), 
-    to_timestamp(col("input"), "MM-dd-yyyy HH mm ss SSS").alias("to_timestamp") 
-  ).show(truncate=False)
-```
-#### hour(), Minute() and second()
-```python
-#hour, minute,second
-data=[["1","2020-02-01 11:01:19.06"],["2","2019-03-01 12:01:19.406"],["3","2021-03-01 12:01:19.406"]]
-df3=spark.createDataFrame(data,["id","input"])
+---
 
-df3.select(col("input"), 
-    hour(col("input")).alias("hour"), 
-    minute(col("input")).alias("minute"),
-    second(col("input")).alias("second") 
-  ).show(truncate=False)
+## 📂 **Sample Data**
+
+```python
+data = [("2025-08-08", "2025-08-08 15:30:45"),
+        ("2024-12-25", "2024-12-25 09:15:30")]
+columns = ["date_str", "timestamp_str"]
+
+df = spark.createDataFrame(data, columns)
+df = df.withColumn("date_col", F.to_date("date_str")) \
+       .withColumn("timestamp_col", F.to_timestamp("timestamp_str"))
+
+df.show(truncate=False)
 ```
+
+---
+
+## 1️⃣ **Convert String to Date/Timestamp**
+
+```python
+df.withColumn("📅 date_val", F.to_date("date_str", "yyyy-MM-dd")) \
+  .withColumn("⏱ timestamp_val", F.to_timestamp("timestamp_str", "yyyy-MM-dd HH:mm:ss")) \
+  .show()
+```
+
+---
+
+## 2️⃣ **Extract Date Parts**
+
+```python
+df.select(
+    "date_col",
+    F.year("date_col").alias("📆 year"),
+    F.month("date_col").alias("📅 month"),
+    F.dayofmonth("date_col").alias("📅 day"),
+    F.dayofweek("date_col").alias("📅 weekday_num"), # 1=Sunday
+    F.dayofyear("date_col").alias("📅 day_of_year"),
+    F.weekofyear("date_col").alias("📅 week_of_year"),
+).show()
+```
+
+---
+
+## 3️⃣ **Extract Time Parts**
+
+```python
+df.select(
+    "timestamp_col",
+    F.hour("timestamp_col").alias("⏰ hour"),
+    F.minute("timestamp_col").alias("⏳ minute"),
+    F.second("timestamp_col").alias("⏱ second")
+).show()
+```
+
+---
+
+## 4️⃣ **Date Arithmetic**
+
+```python
+df.select(
+    "date_col",
+    F.date_add("date_col", 5).alias("📅 plus_5_days"),
+    F.date_sub("date_col", 5).alias("📅 minus_5_days"),
+    F.add_months("date_col", 2).alias("📅 plus_2_months"),
+    F.add_months("date_col", -2).alias("📅 minus_2_months")
+).show()
+```
+
+---
+
+## 5️⃣ **Difference Between Dates**
+
+```python
+df.select(
+    "date_col",
+    F.datediff(F.current_date(), "date_col").alias("📊 days_diff"),
+    F.months_between(F.current_date(), "date_col").alias("📊 months_diff")
+).show()
+```
+
+---
+
+## 6️⃣ **Current Date & Timestamp**
+
+```python
+df.select(
+    F.current_date().alias("📅 today"),
+    F.current_timestamp().alias("⏱ now")
+).show(truncate=False)
+```
+
+---
+
+## 7️⃣ **Formatting Dates/Timestamps**
+
+```python
+df.select(
+    "timestamp_col",
+    F.date_format("timestamp_col", "yyyy-MM-dd HH:mm:ss").alias("📄 full_format"),
+    F.date_format("timestamp_col", "MMM dd, yyyy").alias("📄 custom_format"),
+    F.date_format("timestamp_col", "EEEE").alias("📄 day_name")
+).show()
+```
+
+---
+
+## 8️⃣ **Truncate Date**
+
+```python
+df.select(
+    "timestamp_col",
+    F.trunc("date_col", "MM").alias("📅 first_day_of_month"),
+    F.date_trunc("hour", "timestamp_col").alias("⏱ truncate_to_hour")
+).show()
+```
+
+---
+
+💡 **Notes:**
+
+* Use **`to_date()`** for date only, and **`to_timestamp()`** for date & time.
+* **`date_format()`** is handy for creating human-readable formats.
+* Time zones can be handled with **`from_utc_timestamp()`** and **`to_utc_timestamp()`**.
+
+---
+## 📅 Date & ⏱ Timestamp Functions in PySpark
+
+---
+
+Below is a **complete reference table** of commonly used **date** and **timestamp** functions in PySpark, with descriptions, syntax, and examples.
+
+---
+
+| 📌 Function | 📝 Description | 🖥️ Example | 🏷️ Output Example |
+|-------------|---------------|------------|-------------------|
+| **`current_date()`** | Returns the current system date. | `df.select(F.current_date())` | `2025-08-08` |
+| **`current_timestamp()`** | Returns the current system timestamp. | `df.select(F.current_timestamp())` | `2025-08-08 15:45:10` |
+| **`to_date(col, fmt)`** | Converts a string to date using an optional format. | `F.to_date("date_str", "yyyy-MM-dd")` | `2025-08-08` |
+| **`to_timestamp(col, fmt)`** | Converts a string to timestamp using an optional format. | `F.to_timestamp("timestamp_str", "yyyy-MM-dd HH:mm:ss")` | `2025-08-08 15:30:45` |
+| **`year(col)`** | Extracts the year from a date/timestamp. | `F.year("date_col")` | `2025` |
+| **`month(col)`** | Extracts the month number (1-12). | `F.month("date_col")` | `8` |
+| **`dayofmonth(col)`** | Extracts the day of the month. | `F.dayofmonth("date_col")` | `8` |
+| **`dayofweek(col)`** | Returns the day of week (1=Sunday). | `F.dayofweek("date_col")` | `6` |
+| **`dayofyear(col)`** | Returns the day of year (1–366). | `F.dayofyear("date_col")` | `220` |
+| **`weekofyear(col)`** | Returns the week of year. | `F.weekofyear("date_col")` | `32` |
+| **`hour(col)`** | Extracts the hour from a timestamp. | `F.hour("timestamp_col")` | `15` |
+| **`minute(col)`** | Extracts the minute from a timestamp. | `F.minute("timestamp_col")` | `30` |
+| **`second(col)`** | Extracts the seconds from a timestamp. | `F.second("timestamp_col")` | `45` |
+| **`date_add(col, days)`** | Adds days to a date. | `F.date_add("date_col", 5)` | `2025-08-13` |
+| **`date_sub(col, days)`** | Subtracts days from a date. | `F.date_sub("date_col", 5)` | `2025-08-03` |
+| **`add_months(col, months)`** | Adds/subtracts months from a date. | `F.add_months("date_col", 2)` | `2025-10-08` |
+| **`months_between(date1, date2)`** | Returns the number of months between two dates. | `F.months_between(F.current_date(), "date_col")` | `6.25` |
+| **`datediff(end, start)`** | Returns the number of days between two dates. | `F.datediff(F.current_date(), "date_col")` | `10` |
+| **`last_day(col)`** | Returns the last day of the month. | `F.last_day("date_col")` | `2025-08-31` |
+| **`next_day(col, dayOfWeek)`** | Returns the next given day of week after a date. | `F.next_day("date_col", "Sunday")` | `2025-08-10` |
+| **`trunc(col, format)`** | Truncates date to the specified unit (`"MM"`, `"YYYY"`). | `F.trunc("date_col", "MM")` | `2025-08-01` |
+| **`date_trunc(fmt, col)`** | Truncates timestamp to the given unit (`"hour"`, `"day"`, etc.). | `F.date_trunc("hour", "timestamp_col")` | `2025-08-08 15:00:00` |
+| **`from_unixtime(epoch)`** | Converts UNIX timestamp to human-readable time. | `F.from_unixtime(1628391245)` | `2021-08-08 15:34:05` |
+| **`unix_timestamp(col, fmt)`** | Converts date/timestamp to UNIX timestamp. | `F.unix_timestamp("timestamp_col", "yyyy-MM-dd HH:mm:ss")` | `1754641245` |
+| **`date_format(col, fmt)`** | Formats a date/timestamp as string. | `F.date_format("timestamp_col", "MMM dd, yyyy")` | `Aug 08, 2025` |
+| **`from_utc_timestamp(ts, tz)`** | Converts UTC timestamp to given timezone. | `F.from_utc_timestamp("timestamp_col", "PST")` | `2025-08-08 08:30:45` |
+| **`to_utc_timestamp(ts, tz)`** | Converts given timezone timestamp to UTC. | `F.to_utc_timestamp("timestamp_col", "PST")` | `2025-08-08 22:30:45` |
+| **`current_date()`** | Gets today’s date without time. | `F.current_date()` | `2025-08-08` |
+| **`current_timestamp()`** | Gets current date & time. | `F.current_timestamp()` | `2025-08-08 15:45:10` |
+
+---
+
+💡 **Tips:**
+- **Date parts extraction**: Use `year()`, `month()`, `dayofmonth()` etc.
+- **Date math**: Use `date_add()`, `date_sub()`, `add_months()`.
+- **Formatting**: Use `date_format()` for display-friendly strings.
+- **Truncation**: Use `trunc()` for dates and `date_trunc()` for timestamps.
+- **Time zones**: Use `from_utc_timestamp()` and `to_utc_timestamp()`.
+
+---
