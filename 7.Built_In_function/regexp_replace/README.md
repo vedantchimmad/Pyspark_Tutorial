@@ -1,32 +1,130 @@
-# regexp_replace
+# 🔍 `regexp_replace` in PySpark
 
 ---
-PySpark SQL function regexp_replace() you can replace a column value with a string for another string/substring.
+
+## 📝 Overview
+The `regexp_replace` function in PySpark replaces **all substrings** in a string that match a given **regular expression pattern** with a replacement string.  
+Think of it as a **find-and-replace** operation powered by regex.
+
+**Import Path**
 ```python
-
-# Imports
-# Create sample Data
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.master("local[1]").appName("SparkByExamples.com").getOrCreate()
-address = [(1,"14851 Jeffrey Rd","DE"),
-    (2,"43421 Margarita St","NY"),
-    (3,"13111 Siemon Ave","CA")]
-df =spark.createDataFrame(address,["id","address","state"])
-df.show()
-
-#Replace part of string with another string
 from pyspark.sql.functions import regexp_replace
-df.withColumn('address', regexp_replace('address', 'Rd', 'Road'))
-    .show(truncate=False)
-```
-####  Replace Column Values Conditionally
+````
+
+---
+
+## 🛠 Syntax
+
 ```python
-#Replace string column value conditionally
-from pyspark.sql.functions import when
-df.withColumn('address', 
-    when(df.address.endswith('Rd'),regexp_replace(df.address,'Rd','Road')) \
-   .when(df.address.endswith('St'),regexp_replace(df.address,'St','Street')) \
-   .when(df.address.endswith('Ave'),regexp_replace(df.address,'Ave','Avenue')) \
-   .otherwise(df.address)) \
-   .show(truncate=False)
+regexp_replace(str, pattern, replacement)
 ```
+
+| Parameter     | Description                                   |
+| ------------- | --------------------------------------------- |
+| `str`         | **Required**. Column containing the string.   |
+| `pattern`     | **Required**. Regex pattern to search for.    |
+| `replacement` | **Required**. String to replace matches with. |
+
+**Return Type:**
+`StringType`
+
+---
+
+## 🎯 Example 1: Replace a Specific Word
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import regexp_replace
+
+spark = SparkSession.builder.appName("RegexReplaceExample").getOrCreate()
+
+data = [("Apache Spark",), ("Spark SQL",)]
+df = spark.createDataFrame(data, ["text"])
+
+df = df.withColumn(
+    "updated_text",
+    regexp_replace("text", "Spark", "PySpark")
+)
+
+df.show()
+```
+
+**Output:**
+
+```
++-------------+-------------+
+|text         |updated_text |
++-------------+-------------+
+|Apache Spark |Apache PySpark|
+|Spark SQL    |PySpark SQL  |
++-------------+-------------+
+```
+
+---
+
+## 🎯 Example 2: Remove Special Characters
+
+```python
+data = [("Hello@World!",), ("Py$Spark#",)]
+df = spark.createDataFrame(data, ["text"])
+
+df = df.withColumn(
+    "clean_text",
+    regexp_replace("text", "[^a-zA-Z0-9 ]", "")  # Keep only letters/numbers/spaces
+)
+
+df.show()
+```
+
+**Output:**
+
+```
++------------+-----------+
+|text        |clean_text |
++------------+-----------+
+|Hello@World!|HelloWorld |
+|Py$Spark#   |PySpark    |
++------------+-----------+
+```
+
+---
+
+## 🎯 Example 3: Mask Phone Numbers
+
+```python
+data = [("Call me at 9876543210",)]
+df = spark.createDataFrame(data, ["message"])
+
+df = df.withColumn(
+    "masked",
+    regexp_replace("message", "\\d{10}", "**********")
+)
+
+df.show()
+```
+
+**Output:**
+
+```
++-----------------------+------------------+
+|message                |masked            |
++-----------------------+------------------+
+|Call me at 9876543210  |Call me at **********|
++-----------------------+------------------+
+```
+
+---
+
+## 🔍 Key Points
+
+* **Regex-powered:** Supports full regular expressions for flexible matching.
+* **Global replacement:** Replaces **all occurrences**, not just the first.
+* **Escaping:** Remember to double escape (`\\`) special regex characters in Python strings.
+* Useful for:
+
+    * Data cleaning (removing unwanted characters)
+    * Masking sensitive data
+    * Text normalization
+
+---
+
